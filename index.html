@@ -27,13 +27,10 @@
   .logo { font-size: 22px; }
   header h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
   header p  { font-size: 11px; color: var(--muted); margin-top: 1px; }
-
   .container {
     width: 100%; max-width: 520px;
     padding: 16px; display: flex; flex-direction: column; gap: 14px;
   }
-
-  /* ── Safari tip banner ── */
   .safari-tip {
     background: rgba(233,69,96,0.08);
     border: 1px solid rgba(233,69,96,0.3);
@@ -48,8 +45,6 @@
     margin-left: auto; flex-shrink: 0; background: none; border: none;
     color: var(--muted); font-size: 18px; padding: 0 0 0 8px; cursor: pointer;
   }
-
-  /* ── Upload panel ── */
   .drop-zone {
     display: block; border: 2px dashed var(--accent);
     border-radius: 16px; padding: 32px 20px; text-align: center;
@@ -62,7 +57,6 @@
   .drop-zone h2 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
   .drop-zone p  { font-size: 13px; color: var(--muted); line-height: 1.5; }
   #file-input { display: none; }
-
   .or-divider {
     display: flex; align-items: center; gap: 10px;
     color: var(--muted); font-size: 12px;
@@ -70,7 +64,6 @@
   .or-divider::before, .or-divider::after {
     content: ''; flex: 1; height: 1px; background: var(--border);
   }
-
   .paste-area {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 12px; overflow: hidden;
@@ -87,7 +80,6 @@
     padding: 8px 12px; gap: 8px; align-items: center;
     justify-content: flex-end;
   }
-
   button {
     background: var(--btn); color: var(--text);
     border: 1px solid var(--border); border-radius: 8px;
@@ -98,8 +90,6 @@
   button:active { background: var(--btn-hover); }
   .btn-accent { background: var(--accent); border-color: var(--accent); color: white; }
   .btn-accent:active { background: #c73650; }
-
-  /* ── Game list ── */
   #game-list-panel { display: none; }
   .db-header {
     background: var(--panel); border: 1px solid var(--border);
@@ -142,8 +132,6 @@
     padding: 2px 7px; flex-shrink: 0;
   }
   .no-results { text-align: center; color: var(--muted); font-size: 13px; padding: 24px; }
-
-  /* ── Board viewer ── */
   #viewer { display: none; }
   .game-info {
     background: var(--panel); border: 1px solid var(--border);
@@ -162,7 +150,6 @@
     color: var(--accent); border-radius: 6px;
     padding: 2px 8px; font-size: 11px; font-weight: 700; margin-left: 6px;
   }
-
   .board-wrap {
     position: relative; width: 100%; aspect-ratio: 1;
     border-radius: 8px; overflow: hidden;
@@ -171,8 +158,6 @@
   canvas#board-canvas {
     width: 100%; height: 100%; display: block; touch-action: none;
   }
-
-  /* ── Annotation box ── */
   .annotation-box {
     background: var(--panel); border: 1px solid rgba(233,69,96,0.25);
     border-left: 3px solid var(--accent);
@@ -181,7 +166,6 @@
     display: none;
   }
   .annotation-box.visible { display: block; }
-
   .controls {
     display: flex; gap: 8px; justify-content: center; align-items: center;
   }
@@ -193,8 +177,6 @@
     flex: 2; text-align: center; font-size: 13px;
     color: var(--muted); font-weight: 500;
   }
-
-  /* ── Move list ── */
   .move-list-wrap {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 12px; padding: 10px;
@@ -212,28 +194,24 @@
   }
   .move-token:active { background: rgba(255,255,255,0.1); }
   .move-token.active { background: var(--active-move); color: #ff6b7a; font-weight: 600; }
-  /* dot indicator for moves that have an annotation */
   .move-token.has-note::after {
     content: '';
     position: absolute; top: 3px; right: 2px;
     width: 4px; height: 4px; border-radius: 50%;
     background: var(--accent); opacity: 0.8;
   }
-
   .nav-row { display: flex; align-items: center; gap: 8px; }
   .nav-row button { padding: 8px 14px; font-size: 13px; }
   .flip-btn { font-size: 18px; padding: 8px 12px; }
   .game-nav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
   .game-nav button { max-width: none; flex: none; padding: 8px 12px; font-size: 15px; }
   .game-nav-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-
   .status-bar { font-size: 12px; color: var(--muted); text-align: center; padding: 2px 0; }
   .status-bar.check     { color: #f5a623; font-weight: 600; }
   .status-bar.checkmate { color: var(--accent); font-weight: 700; }
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">♟</div>
   <div>
@@ -241,10 +219,7 @@
     <p>Open &amp; replay chess games — no app needed</p>
   </div>
 </header>
-
 <div class="container">
-
-  <!-- Safari tip banner -->
   <div class="safari-tip" id="safari-tip">
     <div class="tip-icon">ℹ️</div>
     <div>
@@ -255,8 +230,6 @@
     </div>
     <button class="tip-close" onclick="document.getElementById('safari-tip').style.display='none'">✕</button>
   </div>
-
-  <!-- Upload panel -->
   <div id="upload-panel">
     <label class="drop-zone" id="drop-zone" for="file-input">
       <div class="drop-icon">📂</div>
@@ -264,9 +237,7 @@
       <p>Tap to browse your files<br>or drag &amp; drop a .pgn file here</p>
       <input type="file" id="file-input">
     </label>
-
     <div class="or-divider">or paste PGN below</div>
-
     <div class="paste-area">
       <textarea id="pgn-input" placeholder="[Event &quot;...&quot;]&#10;[White &quot;...&quot;]&#10;[Black &quot;...&quot;]&#10;&#10;1. e4 {Good opening} e5 2. Nf3 ..."></textarea>
       <div class="paste-row">
@@ -275,8 +246,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Game list panel -->
   <div id="game-list-panel">
     <div class="db-header">
       <div>
@@ -293,8 +262,6 @@
       <div class="game-list" id="game-list"></div>
     </div>
   </div>
-
-  <!-- Board viewer -->
   <div id="viewer">
     <div class="nav-row">
       <button onclick="backToList()">← Games</button>
@@ -305,18 +272,12 @@
         <button onclick="nextGame()">›</button>
       </div>
     </div>
-
     <div class="game-info" id="game-info"></div>
-
     <div class="board-wrap">
       <canvas id="board-canvas"></canvas>
     </div>
-
     <div class="status-bar" id="status-bar"></div>
-
-    <!-- Annotation display -->
     <div class="annotation-box" id="annotation-box"></div>
-
     <div class="controls">
       <button onclick="goToStart()">⏮</button>
       <button onclick="prevMove()">◀</button>
@@ -324,16 +285,12 @@
       <button onclick="nextMove()">▶</button>
       <button onclick="goToEnd()">⏭</button>
     </div>
-
     <div class="move-list-wrap">
       <div class="move-list" id="move-list"></div>
     </div>
   </div>
-
 </div>
-
 <script>
-// ── Piece glyphs ──────────────────────────────────────────────────────────────
 const PIECES = {
   wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
   bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
@@ -348,31 +305,24 @@ const INIT_POS = [
   ['wP','wP','wP','wP','wP','wP','wP','wP'],
   ['wR','wN','wB','wQ','wK','wB','wN','wR']
 ];
-
-// ── State ─────────────────────────────────────────────────────────────────────
 let db = [], currentDbIdx = -1, filteredIndices = [];
 let state = {
   board: null, moves: [], annotations: [], currentMove: -1,
   headers: {}, history: [], flipped: false,
   lastFrom: null, lastTo: null
 };
-
 const canvas = document.getElementById('board-canvas');
 const ctx    = canvas.getContext('2d');
-
-// ── Board helpers ─────────────────────────────────────────────────────────────
 function cloneBoard(b) { return b.map(r => [...r]); }
 function initBoard()   { return INIT_POS.map(r => [...r]); }
 function fileToCol(f)  { return f.charCodeAt(0) - 97; }
 function rankToRow(r)  { return 8 - parseInt(r); }
 function colToFile(c)  { return String.fromCharCode(97 + c); }
 function rowToRank(r)  { return (8 - r).toString(); }
-
-// ── PGN splitting ─────────────────────────────────────────────────────────────
 function splitPGN(text) {
   const games = [];
-  const parts  = text.split(/\n(?=\s*\[)/);
-  let current  = '';
+  const parts = text.split(/\n(?=\s*\[)/);
+  let current = '';
   for (const part of parts) {
     if (/\[\s*\w+\s+"/.test(part)) {
       if (current.trim()) games.push(current.trim());
@@ -384,109 +334,57 @@ function splitPGN(text) {
   if (current.trim()) games.push(current.trim());
   return games.length ? games : [text.trim()];
 }
-
-// ── PGN parser — preserves annotations ───────────────────────────────────────
-// Returns { headers, tokens: string[], annotations: (string|null)[] }
-// annotations[i] is the comment that follows move token i (or null).
 function parsePGN(pgn) {
   pgn = pgn.trim();
-
-  // 1. Extract headers
   const headers = {};
   const headerRe = /\[(\w+)\s+"([^"]*)"\]/g;
   let m;
   while ((m = headerRe.exec(pgn)) !== null) headers[m[1]] = m[2];
-
-  // 2. Strip headers, collapse whitespace
   let body = pgn.replace(/\[.*?\]/gs, '').replace(/[\r\n]+/g, ' ').trim();
-
-  // 3. Remove variation parentheses (nested) — iteratively strip innermost
   let prev;
-  do {
-    prev = body;
-    body = body.replace(/\([^()]*\)/g, '');
-  } while (body !== prev);
-
-  // 4. Strip NAG glyphs ($0–$255)
+  do { prev = body; body = body.replace(/\([^()]*\)/g, ''); } while (body !== prev);
   body = body.replace(/\$\d+/g, ' ');
-
-  // 5. Remove result token at end
   body = body.replace(/\s*(1-0|0-1|1\/2-1\/2|\*)\s*$/, '');
-
-  // 6. Tokenise — split into move tokens and {comment} blobs
-  //    We want to know which comment follows which move.
-  //    Strategy: split on { and }, keeping structure.
-  const tokens      = [];   // SAN move strings
-  const annotations = [];   // parallel array, annotation after tokens[i]
-
-  // Chunk the body into alternating non-comment / comment segments
+  const tokens = [], annotations = [];
   const chunks = body.split(/(\{[^}]*\})/);
-  // odd indices are {comment} chunks, even indices are move text
-
-  let pendingComment = null;   // comment seen before next move
-  let movesSinceLastComment = 0;
-
-  // We walk chunks and attach each comment to the PRECEDING move token.
-  // If a comment appears before any move (game-level comment), we store it
-  // as annotations[-1] / on token index -1; we surface it at "Start".
-
-  let gameComment = null; // comment before first move
-
+  let gameComment = null;
   for (let ci = 0; ci < chunks.length; ci++) {
     const chunk = chunks[ci].trim();
     if (!chunk) continue;
-
     if (chunk.startsWith('{')) {
-      // Extract comment text, trim whitespace
       const commentText = chunk.slice(1, -1).trim();
-      if (tokens.length === 0) {
-        gameComment = commentText;
-      } else {
-        // Attach to the last move token
-        annotations[tokens.length - 1] = commentText;
-      }
+      if (tokens.length === 0) { gameComment = commentText; }
+      else { annotations[tokens.length - 1] = commentText; }
     } else {
-      // Move text segment — extract individual move tokens
       const words = chunk.split(/\s+/).filter(w => w && !/^\d+\.+$/.test(w));
-      for (const w of words) {
-        tokens.push(w);
-        annotations.push(null); // placeholder, may be overwritten by next comment
-      }
+      for (const w of words) { tokens.push(w); annotations.push(null); }
     }
   }
-
   return { headers, tokens, annotations, gameComment: gameComment || null };
 }
-
-// ── Chess logic ───────────────────────────────────────────────────────────────
 function applyMove(board, token, isWhite, castling, enPassant) {
   const b = cloneBoard(board);
   const color = isWhite ? 'w' : 'b';
   let newEnPassant = null;
-  let newCastling  = JSON.parse(JSON.stringify(castling));
-
+  let newCastling = JSON.parse(JSON.stringify(castling));
   token = token.replace(/[+#!?]/g, '');
-
   if (token === 'O-O' || token === '0-0') {
     const row = isWhite ? 7 : 0;
     b[row][6]=color+'K'; b[row][5]=color+'R'; b[row][4]=null; b[row][7]=null;
     newCastling[color]={K:false,Q:false};
-    return {board:b, from:[row,4], to:[row,6], castling:newCastling, enPassant:null};
+    return {board:b,from:[row,4],to:[row,6],castling:newCastling,enPassant:null};
   }
   if (token === 'O-O-O' || token === '0-0-0') {
     const row = isWhite ? 7 : 0;
     b[row][2]=color+'K'; b[row][3]=color+'R'; b[row][4]=null; b[row][0]=null;
     newCastling[color]={K:false,Q:false};
-    return {board:b, from:[row,4], to:[row,2], castling:newCastling, enPassant:null};
+    return {board:b,from:[row,4],to:[row,2],castling:newCastling,enPassant:null};
   }
-
   let promo = null;
   const promoMatch = token.match(/=([QRBN])/);
   if (promoMatch) { promo = color+promoMatch[1]; token = token.replace(/=[QRBN]/,''); }
-
   const capture = token.includes('x');
   token = token.replace('x','');
-
   let piece, disambig = '', dest;
   if      (token.length===2) { piece='P'; dest=token; }
   else if (token.length===3) {
@@ -496,10 +394,8 @@ function applyMove(board, token, isWhite, castling, enPassant) {
   else if (token.length===4) { piece=token[0]; disambig=token[1]; dest=token.slice(2); }
   else if (token.length===5) { piece=token[0]; disambig=token.slice(1,3); dest=token.slice(3); }
   else return null;
-
   const toCol = fileToCol(dest[0]);
   const toRow = rankToRow(dest[1]);
-
   let candidates = [];
   for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
     const p = b[r][c];
@@ -514,22 +410,16 @@ function applyMove(board, token, isWhite, castling, enPassant) {
   }
   if (candidates.length===0) return null;
   const [fr,fc] = candidates[0];
-
-  if (piece==='P' && capture && b[toRow][toCol]===null && enPassant) {
+  if (piece==='P' && capture && b[toRow][toCol]===null && enPassant)
     b[isWhite ? toRow+1 : toRow-1][toCol] = null;
-  }
   if (piece==='P' && Math.abs(fr-toRow)===2)
     newEnPassant = [isWhite ? toRow+1 : toRow-1, toCol];
-
   b[toRow][toCol] = promo ? promo : (color+piece);
   b[fr][fc] = null;
-
   if (piece==='K') newCastling[color]={K:false,Q:false};
   if (piece==='R') { if(fc===7) newCastling[color].K=false; if(fc===0) newCastling[color].Q=false; }
-
-  return {board:b, from:[fr,fc], to:[toRow,toCol], castling:newCastling, enPassant:newEnPassant};
+  return {board:b,from:[fr,fc],to:[toRow,toCol],castling:newCastling,enPassant:newEnPassant};
 }
-
 function canReach(board,fr,fc,tr,tc,piece,color,enPassant) {
   const dr=tr-fr, dc=tc-fc, opp=color==='w'?'b':'w';
   if (piece==='P') {
@@ -556,7 +446,6 @@ function pathClear(board,fr,fc,tr,tc) {
   while (r!==tr||c!==tc) { if (board[r][c]) return false; r+=dr; c+=dc; }
   return true;
 }
-
 function buildHistory(tokens, initialBoard) {
   let board=cloneBoard(initialBoard);
   let castling={w:{K:true,Q:true},b:{K:true,Q:true}};
@@ -572,8 +461,6 @@ function buildHistory(tokens, initialBoard) {
   }
   return history;
 }
-
-// ── Drawing ───────────────────────────────────────────────────────────────────
 function drawBoard() {
   const size=canvas.width, sq=size/8, flipped=state.flipped;
   for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
@@ -616,8 +503,6 @@ function resizeCanvas() {
   canvas.style.width=w+'px'; canvas.style.height=w+'px';
   drawBoard();
 }
-
-// ── Navigation ────────────────────────────────────────────────────────────────
 function goTo(idx) {
   if (idx<-1||idx>=state.history.length-1) return;
   state.currentMove=idx;
@@ -631,7 +516,6 @@ function prevMove()  { goTo(state.currentMove-1); }
 function goToStart() { goTo(-1); }
 function goToEnd()   { goTo(state.history.length-2); }
 function flipBoard() { state.flipped=!state.flipped; drawBoard(); }
-
 function updateControls() {
   const cur=state.currentMove;
   if (cur<0) {
@@ -653,27 +537,13 @@ function updateStatus() {
     bar.textContent=r?'Result: '+r:''; bar.className='status-bar';
   } else { bar.textContent=''; bar.className='status-bar'; }
 }
-
-// ── Annotation display ────────────────────────────────────────────────────────
 function showAnnotation() {
-  const box = document.getElementById('annotation-box');
-  const cur  = state.currentMove;
-  let text = null;
-  if (cur === -1) {
-    text = state.gameComment || null;
-  } else {
-    text = state.annotations[cur] || null;
-  }
-  if (text) {
-    box.textContent = text;
-    box.classList.add('visible');
-  } else {
-    box.textContent = '';
-    box.classList.remove('visible');
-  }
+  const box=document.getElementById('annotation-box');
+  const cur=state.currentMove;
+  const text=cur===-1?(state.gameComment||null):(state.annotations[cur]||null);
+  if (text) { box.textContent=text; box.classList.add('visible'); }
+  else { box.textContent=''; box.classList.remove('visible'); }
 }
-
-// ── Move list ─────────────────────────────────────────────────────────────────
 function buildMoveList() {
   const ml=document.getElementById('move-list');
   ml.innerHTML='';
@@ -685,7 +555,6 @@ function buildMoveList() {
     }
     const el=document.createElement('span');
     el.className='move-token'; el.textContent=m; el.dataset.idx=i;
-    // Mark moves that have a following annotation with a small dot
     if (state.annotations[i]) el.classList.add('has-note');
     el.addEventListener('click',()=>goTo(parseInt(el.dataset.idx)));
     el.addEventListener('touchend',e=>{e.preventDefault();goTo(parseInt(el.dataset.idx));});
@@ -698,7 +567,16 @@ function highlightMoveList() {
   const active=document.querySelector('.move-token.active');
   if (active) active.scrollIntoView({behavior:'smooth',block:'nearest',inline:'nearest'});
 }
-
+function isCourseDB() {
+  if (!db.length) return false;
+  const sample=db.slice(0,Math.min(db.length,20));
+  const hits=sample.filter(g=>{
+    const w=(g.headers['White']||'').trim();
+    const s=(g.headers['Site']||'').trim();
+    return w&&s&&w===s;
+  });
+  return hits.length/sample.length>0.4;
+}
 function showGameInfo() {
   const h=state.headers;
   const result=h['Result']||'';
@@ -729,24 +607,9 @@ function showGameInfo() {
       </div>`;
   }
 }
-
-// ── Game list ─────────────────────────────────────────────────────────────────
-// Detect if this PGN is a course/repertoire (White tag = chapter name, not a person).
-// Heuristic: if >40% of sampled games have White === Site, it's a course.
-function isCourseDB() {
-  if (!db.length) return false;
-  const sample = db.slice(0, Math.min(db.length, 20));
-  const hits = sample.filter(g => {
-    const w = (g.headers['White']||'').trim();
-    const s = (g.headers['Site']||'').trim();
-    return w && s && w === s;
-  });
-  return hits.length / sample.length > 0.4;
-}
-
 function renderGameList() {
   const q=(document.getElementById('search-input').value||'').toLowerCase();
-  const course = isCourseDB();
+  const course=isCourseDB();
   filteredIndices=[];
   db.forEach((g,i)=>{
     const h=g.headers;
@@ -765,12 +628,9 @@ function renderGameList() {
     const result=h['Result']||'';
     const el=document.createElement('div');
     el.className='game-item'+(i===currentDbIdx?' selected':'');
-
     if (course) {
-      // Course/repertoire: [Site] = chapter name, [Black] = section type
-      const chapter = h['Site'] || h['White'] || 'Chapter '+(i+1);
-      const section = (h['Black'] && h['Black'].trim() !== h['Site'] && h['Black'].trim() !== h['White'])
-        ? h['Black'].trim() : '';
+      const chapter=h['Site']||h['White']||'Chapter '+(i+1);
+      const section=(h['Black']&&h['Black'].trim()!==h['Site']&&h['Black'].trim()!==h['White'])?h['Black'].trim():'';
       el.innerHTML=`
         <span class="game-num">${i+1}</span>
         <div class="game-item-info">
@@ -779,7 +639,6 @@ function renderGameList() {
         </div>
         ${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
     } else {
-      // Real game database: show player names and event details
       const white=h['White']||'?', black=h['Black']||'?';
       const we=h['WhiteElo']?` (${h['WhiteElo']})`:'';
       const be=h['BlackElo']?` (${h['BlackElo']})`:'';
@@ -805,38 +664,29 @@ function renderGameList() {
     list.appendChild(more);
   }
 }
-
 function openGameByDbIndex(dbIdx) {
   const g=db[dbIdx]; if (!g) return;
   currentDbIdx=dbIdx;
   const initB=initBoard();
-  state.headers     = g.headers;
-  state.moves       = g.tokens;
-  state.annotations = g.annotations;
-  state.gameComment = g.gameComment || null;
-  state.history     = buildHistory(g.tokens, initB);
-  state.currentMove = -1;
-  state.board       = cloneBoard(initB);
-  state.lastFrom    = null; state.lastTo=null; state.flipped=false;
-
+  state.headers=g.headers; state.moves=g.tokens;
+  state.annotations=g.annotations; state.gameComment=g.gameComment||null;
+  state.history=buildHistory(g.tokens,initB);
+  state.currentMove=-1; state.board=cloneBoard(initB);
+  state.lastFrom=null; state.lastTo=null; state.flipped=false;
   if (db.length>1) {
     document.getElementById('game-nav').style.display='flex';
     document.getElementById('game-nav-label').textContent=`${dbIdx+1} / ${db.length}`;
   } else {
     document.getElementById('game-nav').style.display='none';
   }
-
   document.getElementById('game-list-panel').style.display='none';
   const v=document.getElementById('viewer');
   v.style.display='flex'; v.style.flexDirection='column'; v.style.gap='12px';
-
   showGameInfo(); buildMoveList();
   setTimeout(()=>{ resizeCanvas(); updateControls(); showAnnotation(); },50);
 }
-
 function prevGame() { if (currentDbIdx>0) openGameByDbIndex(currentDbIdx-1); }
 function nextGame() { if (currentDbIdx<db.length-1) openGameByDbIndex(currentDbIdx+1); }
-
 function backToList() {
   document.getElementById('viewer').style.display='none';
   if (db.length>1) {
@@ -845,8 +695,7 @@ function backToList() {
     renderGameList();
   } else { resetViewer(); }
 }
-
-function loadPGNText(text, filename) {
+function loadPGNText(text,filename) {
   const rawGames=splitPGN(text);
   const parsed=rawGames.map(g=>parsePGN(g)).filter(g=>g.tokens.length>0);
   if (parsed.length===0) { alert('No valid chess games found in this file.'); return; }
@@ -866,7 +715,6 @@ function loadPGNText(text, filename) {
     renderGameList();
   }
 }
-
 function resetViewer() {
   db=[]; currentDbIdx=-1; filteredIndices=[];
   document.getElementById('upload-panel').style.display='';
@@ -879,16 +727,12 @@ function loadFromTextarea() {
   if (!pgn) { alert('Please paste a PGN first.'); return; }
   loadPGNText(pgn,'Pasted PGN');
 }
-
-// ── File input ────────────────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change',e=>{
   const file=e.target.files[0]; if (!file) return;
   const reader=new FileReader();
   reader.onload=ev=>loadPGNText(ev.target.result,file.name);
   reader.readAsText(file); e.target.value='';
 });
-
-// ── Drag & drop ───────────────────────────────────────────────────────────────
 const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over');});
 dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
@@ -897,8 +741,6 @@ dz.addEventListener('drop',e=>{
   const file=e.dataTransfer.files[0];
   if (file) { const r=new FileReader(); r.onload=ev=>loadPGNText(ev.target.result,file.name); r.readAsText(file); }
 });
-
-// ── Keyboard ──────────────────────────────────────────────────────────────────
 document.addEventListener('keydown',e=>{
   if (document.getElementById('viewer').style.display==='none') return;
   if (e.key==='ArrowRight') nextMove();
@@ -908,16 +750,12 @@ document.addEventListener('keydown',e=>{
   if (e.key==='PageUp')     prevGame();
   if (e.key==='PageDown')   nextGame();
 });
-
-// ── Touch swipe ───────────────────────────────────────────────────────────────
 let touchStartX=0;
 canvas.addEventListener('touchstart',e=>{touchStartX=e.touches[0].clientX;},{passive:true});
 canvas.addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-touchStartX;
   if (Math.abs(dx)>40) { dx>0?prevMove():nextMove(); }
 },{passive:true});
-
-// ── Sample (includes annotations) ────────────────────────────────────────────
 function loadSample() {
   document.getElementById('pgn-input').value=
 `[Event "Immortal Game"]
@@ -928,9 +766,8 @@ function loadSample() {
 [Result "1-0"]
 
 {One of the most celebrated attacking games ever played.}
-1. e4 e5 2. f4 {The King's Gambit — White sacrifices a pawn for rapid development and a central attack.} exf4 3. Bc4 Qh4+ 4. Kf1 {Forced — but now the king is committed.} b5 5. Bxb5 Nf6 6. Nf3 Qh6 7. d3 Nh5 8. Nh4 Qg5 9. Nf5 c6 10. g4 {A bold pawn advance trapping the queen's escape.} Nf6 11. Rg1 {Anderssen sacrifices another pawn, and then the exchange.} cxb5 12. h4 Qg6 13. h5 Qg5 14. Qf3 Ng8 15. Bxf4 Qf6 16. Nc3 Bc5 17. Nd5 Qxb2 18. Bd6 {The famous bishop move — blocking the queen's retreat!} Bxg1 19. e5 Qxa1+ 20. Ke2 Na6 21. Nxg7+ Kd8 22. Qf6+ Nxf6 23. Be7# {Checkmate by the seemingly quiet bishop — a stunning finish.} 1-0`;
+1. e4 e5 2. f4 {The King's Gambit — White sacrifices a pawn for rapid development.} exf4 3. Bc4 Qh4+ 4. Kf1 {Forced — but now the king is committed.} b5 5. Bxb5 Nf6 6. Nf3 Qh6 7. d3 Nh5 8. Nh4 Qg5 9. Nf5 c6 10. g4 {A bold pawn advance.} Nf6 11. Rg1 {Anderssen sacrifices the exchange.} cxb5 12. h4 Qg6 13. h5 Qg5 14. Qf3 Ng8 15. Bxf4 Qf6 16. Nc3 Bc5 17. Nd5 Qxb2 18. Bd6 {The famous bishop move!} Bxg1 19. e5 Qxa1+ 20. Ke2 Na6 21. Nxg7+ Kd8 22. Qf6+ Nxf6 23. Be7# {A stunning finish.} 1-0`;
 }
-
 window.addEventListener('resize',()=>{
   if (document.getElementById('viewer').style.display!=='none') resizeCanvas();
 });
