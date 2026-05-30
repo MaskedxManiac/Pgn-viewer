@@ -701,27 +701,52 @@ function highlightMoveList() {
 
 function showGameInfo() {
   const h=state.headers;
-  const white=h['White']||'?', black=h['Black']||'?';
-  const we=h['WhiteElo']?` (${h['WhiteElo']})`:'';
-  const be=h['BlackElo']?` (${h['BlackElo']})`:'';
-  const date=h['Date']?h['Date'].replace(/\./g,'-'):'';
-  const event=h['Event']||'', round=h['Round']?'Round '+h['Round']:'';
   const result=h['Result']||'';
-  document.getElementById('game-info').innerHTML=`
-    <div class="players">
-      <div class="player"><div class="player-name">♔ ${white}${we}</div></div>
-      <div class="vs">vs</div>
-      <div class="player" style="text-align:right"><div class="player-name">${black}${be} ♚</div></div>
-    </div>
-    <div class="game-meta">
-      ${[event,round,date].filter(Boolean).join(' · ')}
-      ${result?`<span class="result-badge">${result}</span>`:''}
-    </div>`;
+  const course=isCourseDB();
+  if (course) {
+    const chapter=h['Site']||h['White']||'';
+    const section=(h['Black']&&h['Black'].trim()!==h['Site']&&h['Black'].trim()!==h['White'])?h['Black'].trim():'';
+    const event=h['Event']||'';
+    document.getElementById('game-info').innerHTML=`
+      <div class="game-meta" style="font-size:12px;color:var(--muted);margin-bottom:4px">${event}</div>
+      <div class="player-name" style="font-size:15px;font-weight:700;line-height:1.3">${chapter}</div>
+      ${section?`<div class="game-meta" style="margin-top:4px">${section}</div>`:''}`;
+  } else {
+    const white=h['White']||'?', black=h['Black']||'?';
+    const we=h['WhiteElo']?` (${h['WhiteElo']})`:'';
+    const be=h['BlackElo']?` (${h['BlackElo']})`:'';
+    const date=h['Date']?h['Date'].replace(/\./g,'-'):'';
+    const event=h['Event']||'', round=h['Round']?'Round '+h['Round']:'';
+    document.getElementById('game-info').innerHTML=`
+      <div class="players">
+        <div class="player"><div class="player-name">♔ ${white}${we}</div></div>
+        <div class="vs">vs</div>
+        <div class="player" style="text-align:right"><div class="player-name">${black}${be} ♚</div></div>
+      </div>
+      <div class="game-meta">
+        ${[event,round,date].filter(Boolean).join(' · ')}
+        ${result?`<span class="result-badge">${result}</span>`:''}
+      </div>`;
+  }
 }
 
 // ── Game list ─────────────────────────────────────────────────────────────────
+// Detect if this PGN is a course/repertoire (White tag = chapter name, not a person).
+// Heuristic: if >40% of sampled games have White === Site, it's a course.
+function isCourseDB() {
+  if (!db.length) return false;
+  const sample = db.slice(0, Math.min(db.length, 20));
+  const hits = sample.filter(g => {
+    const w = (g.headers['White']||'').trim();
+    const s = (g.headers['Site']||'').trim();
+    return w && s && w === s;
+  });
+  return hits.length / sample.length > 0.4;
+}
+
 function renderGameList() {
   const q=(document.getElementById('search-input').value||'').toLowerCase();
+  const course = isCourseDB();
   filteredIndices=[];
   db.forEach((g,i)=>{
     const h=g.headers;
@@ -737,22 +762,38 @@ function renderGameList() {
   for (let fi=0;fi<limit;fi++) {
     const i=filteredIndices[fi];
     const h=db[i].headers;
-    const white=h['White']||'?', black=h['Black']||'?';
-    const we=h['WhiteElo']?` (${h['WhiteElo']})`:'';
-    const be=h['BlackElo']?` (${h['BlackElo']})`:'';
     const result=h['Result']||'';
-    const date=h['Date']?h['Date'].replace(/\.\?\?/g,'').replace(/\./g,'-'):'';
-    const eco=h['ECO']||'', opening=h['Opening']||'', event=h['Event']||'';
-    const detail=[event,eco&&opening?`${eco} ${opening}`:opening||eco,date].filter(Boolean).join(' · ');
     const el=document.createElement('div');
     el.className='game-item'+(i===currentDbIdx?' selected':'');
-    el.innerHTML=`
-      <span class="game-num">${i+1}</span>
-      <div class="game-item-info">
-        <div class="game-players">♔ ${white}${we} vs ${black}${be} ♚</div>
-        ${detail?`<div class="game-detail">${detail}</div>`:''}
-      </div>
-      ${result?`<span class="game-result-badge">${result}</span>`:''}`;
+
+    if (course) {
+      // Course/repertoire: [Site] = chapter name, [Black] = section type
+      const chapter = h['Site'] || h['White'] || 'Chapter '+(i+1);
+      const section = (h['Black'] && h['Black'].trim() !== h['Site'] && h['Black'].trim() !== h['White'])
+        ? h['Black'].trim() : '';
+      el.innerHTML=`
+        <span class="game-num">${i+1}</span>
+        <div class="game-item-info">
+          <div class="game-players">${chapter}</div>
+          ${section?`<div class="game-detail">${section}</div>`:''}
+        </div>
+        ${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
+    } else {
+      // Real game database: show player names and event details
+      const white=h['White']||'?', black=h['Black']||'?';
+      const we=h['WhiteElo']?` (${h['WhiteElo']})`:'';
+      const be=h['BlackElo']?` (${h['BlackElo']})`:'';
+      const date=h['Date']?h['Date'].replace(/\.\?\?/g,'').replace(/\./g,'-'):'';
+      const eco=h['ECO']||'', opening=h['Opening']||'', event=h['Event']||'';
+      const detail=[event,eco&&opening?`${eco} ${opening}`:opening||eco,date].filter(Boolean).join(' · ');
+      el.innerHTML=`
+        <span class="game-num">${i+1}</span>
+        <div class="game-item-info">
+          <div class="game-players">♔ ${white}${we} vs ${black}${be} ♚</div>
+          ${detail?`<div class="game-detail">${detail}</div>`:''}
+        </div>
+        ${result?`<span class="game-result-badge">${result}</span>`:''}`;
+    }
     el.addEventListener('click',()=>openGameByDbIndex(i));
     el.addEventListener('touchend',e=>{e.preventDefault();openGameByDbIndex(i);});
     list.appendChild(el);
