@@ -702,7 +702,7 @@ function highlightMoveList() {
 function showGameInfo() {
   const h=state.headers;
   const result=h['Result']||'';
-  const course = state.headers['White'] && state.headers['Site'] && state.headers['White'].trim()===state.headers['Site'].trim();
+  const course = true;
   if (course) {
     const chapter=h['Site']||h['White']||'';
     const section=(h['Black']&&h['Black'].trim()!==h['Site']&&h['Black'].trim()!==h['White'])?h['Black'].trim():'';
@@ -746,7 +746,7 @@ function isCourseDB() {
 
 function renderGameList() {
   const q=(document.getElementById('search-input').value||'').toLowerCase();
-  const course = isCourseDB();
+  const course = true;
   filteredIndices=[];
   db.forEach((g,i)=>{
     const h=g.headers;
