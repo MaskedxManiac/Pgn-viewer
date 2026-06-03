@@ -132,6 +132,7 @@
   .game-item:last-child { border-bottom: none; }
   .game-item:active { background: rgba(255,255,255,0.05); }
   .game-item.selected { background: rgba(233,69,96,0.1); }
+  .game-item.resume { background: rgba(233,69,96,0.05); border-left: 3px solid var(--accent); }
   .game-num { font-size: 11px; color: var(--muted); min-width: 26px; text-align: right; flex-shrink: 0; }
   .game-item-info { flex: 1; min-width: 0; }
   .game-players { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -377,7 +378,8 @@ let db = [], currentDbIdx = -1, filteredIndices = [];
 let state = {
   board: null, moves: [], annotations: [], currentMove: -1,
   headers: {}, history: [], flipped: false,
-  lastFrom: null, lastTo: null
+  lastFrom: null, lastTo: null,
+  currentFilename: null
 };
 
 const canvas = document.getElementById('board-canvas');
@@ -800,7 +802,8 @@ function renderGameList() {
     const h=db[i].headers;
     const result=h['Result']||'';
     const el=document.createElement('div');
-    el.className='game-item'+(i===currentDbIdx?' selected':'');
+    const isResume = state._resumeIdx === i && i !== currentDbIdx;
+    el.className='game-item'+(i===currentDbIdx?' selected':isResume?' resume':'');
 
     const w=(h['White']||'').replace(/\r/g,'').trim(), s=(h['Site']||'').replace(/\r/g,'').trim();
     const isChapter = w && s && w===s;
@@ -845,9 +848,17 @@ function renderGameList() {
   }
 }
 
+function saveLastGame(filename, idx) {
+  try { localStorage.setItem('pgn_last_'+filename, idx); } catch(e) {}
+}
+function loadLastGame(filename) {
+  try { return parseInt(localStorage.getItem('pgn_last_'+filename)); } catch(e) { return NaN; }
+}
+
 function openGameByDbIndex(dbIdx) {
   const g=db[dbIdx]; if (!g) return;
   currentDbIdx=dbIdx;
+  if (state.currentFilename) saveLastGame(state.currentFilename, dbIdx);
   const fenData = g.fen ? parseFEN(g.fen) : { board: initBoard(), isWhite: true };
   const initB = fenData.board;
   state.headers     = g.headers;
@@ -894,6 +905,7 @@ function loadPGNText(text, filename) {
   const parsed=rawGames.map(g=>parsePGN(g)).filter(g=>g.tokens.length>0);
   if (parsed.length===0) { alert('No valid chess games found in this file.'); return; }
   db=parsed; currentDbIdx=-1;
+  state.currentFilename = filename || null;
   document.getElementById('safari-tip').style.display='none';
   if (parsed.length===1) {
     document.getElementById('upload-panel').style.display='none';
@@ -904,9 +916,21 @@ function loadPGNText(text, filename) {
     const p=document.getElementById('game-list-panel');
     p.style.display='flex'; p.style.flexDirection='column'; p.style.gap='10px';
     document.getElementById('db-title').textContent=filename||'Database';
-    document.getElementById('db-count').textContent=`${parsed.length} games`;
+    // Restore last opened game if available
+    const lastIdx = filename ? loadLastGame(filename) : NaN;
+    const resumeIdx = !isNaN(lastIdx) && lastIdx >= 0 && lastIdx < parsed.length ? lastIdx : -1;
+    const countText = parsed.length + ' games' + (resumeIdx >= 0 ? ' · resuming game ' + (resumeIdx+1) : '');
+    document.getElementById('db-count').textContent=countText;
     document.getElementById('search-input').value='';
     renderGameList();
+    // Auto-open last game after short delay so list renders first
+    if (resumeIdx >= 0) {
+      setTimeout(() => {
+        openGameByDbIndex(resumeIdx);
+        // Scroll the game list item into view when back button pressed
+        state._resumeIdx = resumeIdx;
+      }, 300);
+    }
   }
 }
 
