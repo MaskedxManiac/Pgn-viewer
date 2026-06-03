@@ -334,10 +334,33 @@
 
 <script>
 // ── Piece glyphs ──────────────────────────────────────────────────────────────
-const PIECES = {
-  wK:'♔',wQ:'♕',wR:'♖',wB:'♗',wN:'♘',wP:'♙',
-  bK:'♚',bQ:'♛',bR:'♜',bB:'♝',bN:'♞',bP:'♟'
+// Lichess cburnett piece SVGs (loaded once, cached in IMAGE_CACHE)
+const PIECE_URLS = {
+  wK:'https://lichess1.org/assets/piece/cburnett/wK.svg',
+  wQ:'https://lichess1.org/assets/piece/cburnett/wQ.svg',
+  wR:'https://lichess1.org/assets/piece/cburnett/wR.svg',
+  wB:'https://lichess1.org/assets/piece/cburnett/wB.svg',
+  wN:'https://lichess1.org/assets/piece/cburnett/wN.svg',
+  wP:'https://lichess1.org/assets/piece/cburnett/wP.svg',
+  bK:'https://lichess1.org/assets/piece/cburnett/bK.svg',
+  bQ:'https://lichess1.org/assets/piece/cburnett/bQ.svg',
+  bR:'https://lichess1.org/assets/piece/cburnett/bR.svg',
+  bB:'https://lichess1.org/assets/piece/cburnett/bB.svg',
+  bN:'https://lichess1.org/assets/piece/cburnett/bN.svg',
+  bP:'https://lichess1.org/assets/piece/cburnett/bP.svg',
 };
+const IMAGE_CACHE = {};
+function loadPieces() {
+  return Promise.all(Object.entries(PIECE_URLS).map(([key, url]) =>
+    new Promise(resolve => {
+      if (IMAGE_CACHE[key]) return resolve();
+      const img = new Image();
+      img.onload  = () => { IMAGE_CACHE[key] = img; resolve(); };
+      img.onerror = () => resolve(); // fallback gracefully
+      img.src = url;
+    })
+  ));
+}
 const INIT_POS = [
   ['bR','bN','bB','bQ','bK','bB','bN','bR'],
   ['bP','bP','bP','bP','bP','bP','bP','bP'],
@@ -601,16 +624,9 @@ function drawBoard() {
     if (state.lastTo&&state.lastTo[0]===dr&&state.lastTo[1]===dc)
       { ctx.fillStyle='rgba(20,85,30,0.5)'; ctx.fillRect(c*sq,r*sq,sq,sq); }
     const piece=state.board[dr][dc];
-    if (piece) {
-      ctx.font=`${sq*0.78}px serif`;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      if (piece[0]==='w') {
-        ctx.fillStyle='#fff'; ctx.strokeStyle='#333'; ctx.lineWidth=sq*0.04;
-        ctx.strokeText(PIECES[piece],c*sq+sq/2,r*sq+sq/2+sq*0.02);
-      } else {
-        ctx.strokeStyle='rgba(0,0,0,0)'; ctx.lineWidth=0; ctx.fillStyle='#1a1a1a';
-      }
-      ctx.fillText(PIECES[piece],c*sq+sq/2,r*sq+sq/2+sq*0.02);
+    if (piece && IMAGE_CACHE[piece]) {
+      const pad = sq * 0.04;
+      ctx.drawImage(IMAGE_CACHE[piece], c*sq+pad, r*sq+pad, sq-pad*2, sq-pad*2);
     }
     if (c===0) {
       ctx.fillStyle=light?'#B58863':'#F0D9B5';
@@ -629,7 +645,7 @@ function resizeCanvas() {
   const w=wrap.offsetWidth;
   canvas.width=w*window.devicePixelRatio; canvas.height=w*window.devicePixelRatio;
   canvas.style.width=w+'px'; canvas.style.height=w+'px';
-  drawBoard();
+  loadPieces().then(()=>drawBoard());
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
@@ -639,7 +655,7 @@ function goTo(idx) {
   const snap=state.history[idx+1];
   state.board=cloneBoard(snap.board);
   state.lastFrom=snap.from; state.lastTo=snap.to;
-  drawBoard(); updateControls(); highlightMoveList(); showAnnotation();
+  loadPieces().then(()=>drawBoard()); updateControls(); highlightMoveList(); showAnnotation();
 }
 function nextMove()  { goTo(state.currentMove+1); }
 function prevMove()  { goTo(state.currentMove-1); }
