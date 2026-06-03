@@ -33,22 +33,6 @@
     padding: 16px; display: flex; flex-direction: column; gap: 14px;
   }
 
-  /* ── Safari tip banner ── */
-  .safari-tip {
-    background: rgba(233,69,96,0.08);
-    border: 1px solid rgba(233,69,96,0.3);
-    border-radius: 12px; padding: 14px 16px;
-    display: flex; gap: 12px; align-items: flex-start;
-  }
-  .safari-tip .tip-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
-  .safari-tip h3 { font-size: 13px; font-weight: 700; margin-bottom: 5px; color: #ff8096; }
-  .safari-tip p  { font-size: 12px; color: var(--muted); line-height: 1.55; }
-  .safari-tip p b { color: var(--text); }
-  .safari-tip .tip-close {
-    margin-left: auto; flex-shrink: 0; background: none; border: none;
-    color: var(--muted); font-size: 18px; padding: 0 0 0 8px; cursor: pointer;
-  }
-
   /* ── Upload panel ── */
   .drop-zone {
     display: block; border: 2px dashed var(--accent);
@@ -244,18 +228,6 @@
 </header>
 
 <div class="container">
-
-  <!-- Safari tip banner -->
-  <div class="safari-tip" id="safari-tip">
-    <div class="tip-icon">ℹ️</div>
-    <div>
-      <h3>Opening this file on iPad?</h3>
-      <p>Safari cannot open <b>.html files</b> directly from the Files app "Open With" sheet — this is an iOS restriction, not a file problem.<br><br>
-      To open: tap the file in Files → tap <b>Share ⬆</b> → tap <b>Copy to Safari</b> or <b>Open in Safari</b>.<br>
-      Alternatively, in Safari tap the address bar → type a space → paste nothing, then use <b>File → Open</b> if available, or drag the file into Safari from Split View.</p>
-    </div>
-    <button class="tip-close" onclick="document.getElementById('safari-tip').style.display='none'">✕</button>
-  </div>
 
   <!-- Upload panel -->
   <div id="upload-panel">
@@ -906,7 +878,6 @@ function loadPGNText(text, filename) {
   if (parsed.length===0) { alert('No valid chess games found in this file.'); return; }
   db=parsed; currentDbIdx=-1;
   state.currentFilename = filename || null;
-  document.getElementById('safari-tip').style.display='none';
   if (parsed.length===1) {
     document.getElementById('upload-panel').style.display='none';
     openGameByDbIndex(0);
@@ -1004,3 +975,4 @@ window.addEventListener('resize',()=>{
 </script>
 </body>
 </html>
+
