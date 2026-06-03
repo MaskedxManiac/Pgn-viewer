@@ -363,6 +363,29 @@ const ctx    = canvas.getContext('2d');
 // ── Board helpers ─────────────────────────────────────────────────────────────
 function cloneBoard(b) { return b.map(r => [...r]); }
 function initBoard()   { return INIT_POS.map(r => [...r]); }
+
+function parseFEN(fen) {
+  if (!fen) return { board: initBoard(), isWhite: true, moveNum: 1 };
+  const parts = fen.trim().split(' ');
+  const rows = parts[0].split('/');
+  const pieceMap = {
+    'r':'bR','n':'bN','b':'bB','q':'bQ','k':'bK','p':'bP',
+    'R':'wR','N':'wN','B':'wB','Q':'wQ','K':'wK','P':'wP'
+  };
+  const board = [];
+  for (const row of rows) {
+    const boardRow = [];
+    for (const ch of row) {
+      if (ch >= '1' && ch <= '8') { for (let i=0;i<parseInt(ch);i++) boardRow.push(null); }
+      else boardRow.push(pieceMap[ch] || null);
+    }
+    board.push(boardRow);
+  }
+  const isWhite = parts.length < 2 || parts[1] === 'w';
+  const moveNum = parts.length >= 6 ? parseInt(parts[5]) || 1 : 1;
+  return { board, isWhite, moveNum };
+}
+
 function fileToCol(f)  { return f.charCodeAt(0) - 97; }
 function rankToRow(r)  { return 8 - parseInt(r); }
 function colToFile(c)  { return String.fromCharCode(97 + c); }
@@ -446,7 +469,8 @@ function parsePGN(pgn) {
     }
   }
 
-  return { headers, tokens, annotations, gameComment: gameComment || null };
+  const fen = headers['FEN'] || null;
+  return { headers, tokens, annotations, gameComment: gameComment || null, fen };
 }
 
 // ── Chess logic ───────────────────────────────────────────────────────────────
@@ -548,12 +572,12 @@ function pathClear(board,fr,fc,tr,tc) {
   return true;
 }
 
-function buildHistory(tokens, initialBoard) {
+function buildHistory(tokens, initialBoard, startWhite) {
   let board=cloneBoard(initialBoard);
   let castling={w:{K:true,Q:true},b:{K:true,Q:true}};
   let enPassant=null;
   const history=[{board:cloneBoard(board),from:null,to:null}];
-  let isWhite=true;
+  let isWhite = (startWhite !== undefined) ? startWhite : true;
   for (const token of tokens) {
     const res=applyMove(board,token,isWhite,castling,enPassant);
     if (!res) { isWhite=!isWhite; continue; }
@@ -628,8 +652,12 @@ function updateControls() {
   if (cur<0) {
     document.getElementById('move-counter').textContent='Start';
   } else {
-    const moveNum=Math.floor(cur/2)+1;
-    const color=cur%2===0?'White':'Black';
+    const startMoveNum = state.fenMoveNum || 1;
+    const startIsWhite = state.fenIsWhite !== undefined ? state.fenIsWhite : true;
+    const halfOffset = startIsWhite ? 0 : 1;
+    const moveNum = Math.floor((cur + halfOffset) / 2) + startMoveNum;
+    const colorIdx = (cur + halfOffset) % 2;
+    const color = colorIdx === 0 ? 'White' : 'Black';
     document.getElementById('move-counter').textContent=`Move ${moveNum} — ${color}`;
   }
   updateStatus();
@@ -763,8 +791,9 @@ function renderGameList() {
     if (isChapter) {
       // Course/repertoire: [Site] = chapter name, [Black] = section type
       const chapter = h['Site'] || h['White'] || 'Chapter '+(i+1);
-      const section = (h['Black'] && h['Black'].trim() !== h['Site'] && h['Black'].trim() !== h['White'])
-        ? h['Black'].trim() : '';
+      const rawBlack = (h['Black']||'').trim();
+      const section = (rawBlack && rawBlack !== h['Site'] && rawBlack !== h['White'])
+        ? rawBlack : '';
       el.innerHTML=`
         <span class="game-num">${i+1}</span>
         <div class="game-item-info">
@@ -803,12 +832,16 @@ function renderGameList() {
 function openGameByDbIndex(dbIdx) {
   const g=db[dbIdx]; if (!g) return;
   currentDbIdx=dbIdx;
-  const initB=initBoard();
+  const fenData = g.fen ? parseFEN(g.fen) : { board: initBoard(), isWhite: true };
+  const initB = fenData.board;
   state.headers     = g.headers;
   state.moves       = g.tokens;
   state.annotations = g.annotations;
   state.gameComment = g.gameComment || null;
-  state.history     = buildHistory(g.tokens, initB);
+  state.fen         = g.fen || null;
+  state.fenMoveNum  = g.fen ? (parseFEN(g.fen).moveNum) : 1;
+  state.fenIsWhite  = fenData.isWhite;
+  state.history     = buildHistory(g.tokens, initB, fenData.isWhite);
   state.currentMove = -1;
   state.board       = cloneBoard(initB);
   state.lastFrom    = null; state.lastTo=null; state.flipped=false;
