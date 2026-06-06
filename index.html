@@ -933,7 +933,8 @@ canvas.addEventListener('click',e=>{
 });
 
 // ── Stockfish 18 engine ───────────────────────────────────────────────────────
-let engineOn=false,sf=null,engineReady=false,engineDepth=20,engineThinking=false;
+let engineOn=false,sf=null,engineReady=false,engineDepth=20;
+let engineTimer=null, engineSearchId=0;
 
 function toggleEngine(){
   engineOn=!engineOn;
@@ -947,18 +948,25 @@ function toggleEngine(){
   }else{
     btn.classList.remove('btn-on');btn.textContent='⚙ Engine';
     panel.classList.remove('visible');
-    if(sf&&engineThinking){sf.postMessage('stop');}
+    cancelEngine();
+  }
+}
+
+function cancelEngine(){
+  if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
+  engineSearchId++; // invalidate any in-flight results
+  if(sf&&engineReady){
+    try{sf.postMessage('stop');}catch(e){}
   }
 }
 
 function initStockfish(){
   document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Loading Stockfish 18…</div>';
-  // Load from same origin (repo) — avoids all CORS/CSP issues
   try{
     sf=new Worker('./stockfish-18-lite-single.js');
     sf.onmessage=e=>handleSFMessage(e.data);
-    sf.onerror=err=>{
-      console.error('SF error',err);
+    sf.onerror=()=>{
+      engineReady=false;sf=null;
       document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';
     };
     sf.postMessage('uci');
@@ -968,28 +976,38 @@ function initStockfish(){
 }
 
 function handleSFMessage(msg){
-  if(msg==='uciok'){sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}
-  if(msg==='readyok'){engineReady=true;triggerEngine();}
+  if(msg==='uciok'){
+    try{sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}catch(e){}
+  }
+  if(msg==='readyok'){
+    engineReady=true;
+    if(engineOn)triggerEngine();
+  }
   if(msg.startsWith('info')&&msg.includes(' pv ')){
     parseInfoLine(msg);
   }
 }
 
 const sfLines={};
+let currentSearchId=0;
 function parseInfoLine(msg){
-  const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),mpvM=msg.match(/multipv (\d+)/);
+  // Ignore stale results from a previous position
+  if(currentSearchId!==engineSearchId)return;
+  const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),
+        cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),
+        mpvM=msg.match(/multipv (\d+)/);
   if(!mpvM||!pvM)return;
   const idx=parseInt(mpvM[1]);
   let evalStr='';
-  if(cpM){const cp=parseInt(cpM[1]);const pawns=(cp/100).toFixed(2);evalStr=(cp>=0?'+':'')+pawns;}
+  if(cpM){const cp=parseInt(cpM[1]);evalStr=(cp>=0?'+':'')+(cp/100).toFixed(2);}
   else if(mateM){evalStr='M'+Math.abs(parseInt(mateM[1]));}
-  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
+  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),
+                cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
   renderEngineLines();
 }
 
 function uciBoardFEN(){
-  const board=state.board;
-  const isWhite=getCurrentIsWhite();
+  const board=state.board,isWhite=getCurrentIsWhite();
   const rows=board.map(row=>{
     let s='',e=0;
     for(const p of row){if(!p)e++;else{if(e){s+=e;e=0;}s+=p[0]==='w'?p[1].toUpperCase():p[1].toLowerCase();}}
@@ -998,18 +1016,27 @@ function uciBoardFEN(){
   return rows.join('/')+(isWhite?' w ':' b ')+'- - 0 '+(state.fenMoveNum||1);
 }
 
-let engineTimer=null;
 function triggerEngine(){
   if(!engineOn||!engineReady)return;
-  if(engineTimer)clearTimeout(engineTimer);
+  cancelEngine(); // stop any current search + clear timer
   engineTimer=setTimeout(()=>{
+    engineTimer=null;
     sfLines[1]=null;sfLines[2]=null;
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Analysing…</div>';
-    engineThinking=true;
-    sf.postMessage('stop');
-    sf.postMessage('position fen '+uciBoardFEN());
-    sf.postMessage('go depth '+engineDepth);
-  },120);
+    // Assign a new search ID — any info lines with old ID will be ignored
+    engineSearchId++;
+    currentSearchId=engineSearchId;
+    try{
+      sf.postMessage('stop');
+      sf.postMessage('position fen '+uciBoardFEN());
+      sf.postMessage('go depth '+engineDepth);
+    }catch(e){
+      // Worker died — recreate it
+      sf=null;engineReady=false;
+      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Restarting engine…</div>';
+      initStockfish();
+    }
+  },300); // 300ms debounce — waits for rapid navigation to settle
 }
 
 function renderEngineLines(){
@@ -1021,7 +1048,7 @@ function renderEngineLines(){
     const row=document.createElement('div');row.className='engine-line';
     const ev=document.createElement('div');ev.className='engine-eval';
     const cpVal=line.cp!==null?(isWhite?line.cp:-line.cp):null;
-    ev.textContent=line.eval??(cpVal!==null?((cpVal>=0?'+':'')+( cpVal/100).toFixed(2)):'');
+    ev.textContent=line.eval??(cpVal!==null?((cpVal>=0?'+':'')+(cpVal/100).toFixed(2)):'');
     if(cpVal!==null&&cpVal<0)ev.classList.add('neg');
     const moves=document.createElement('div');moves.className='engine-moves';
     moves.textContent=line.pv.join(' ')+(line.depth?` (d${line.depth})`:'');
@@ -1368,8 +1395,10 @@ function showPositionResults(results) {
 
   results.forEach(({gameIdx, moveIdx}) => {
     const h = db[gameIdx].headers;
-    const _w = (h['White']||'').replace(//g,'').trim();
-    const _s = (h['Site']||'').replace(//g,'').trim();
+    const _w = (h['White']||'').replace(/
+/g,'').trim();
+    const _s = (h['Site']||'').replace(/
+/g,'').trim();
     const isChapter = _w && _s && _w === _s;
     const title2 = isChapter ? (_s || _w) : `${h['White']||'?'} vs ${h['Black']||'?'}`;
     const moveLabel = moveIdx < 0 ? 'Starting position' : `Move ${Math.floor(moveIdx/2)+1} (${moveIdx%2===0?'after White':'after Black'})`;
