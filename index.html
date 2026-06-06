@@ -79,14 +79,14 @@
   .board-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);flex-shrink:0;}
   canvas#board-canvas{width:100%;height:100%;display:block;touch-action:none;}
   .side-panel{display:flex;flex-direction:column;gap:8px;}
+  /* Portrait: move list normal height */
+  .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;}
+  /* Landscape */
+  @media (orientation:landscape) and (min-width:600px) {
+    .move-list-wrap{max-height:45%;overflow-y:auto;flex-shrink:0;}
+  }
   .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;overflow-y:auto;}
   .annotation-placeholder{color:var(--muted);font-style:italic;font-size:12px;}
-  /* Position editor palette */
-  .piece-palette{display:flex;flex-wrap:wrap;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;}
-  .palette-piece{width:48px;height:48px;border-radius:8px;background:var(--btn);border:2px solid transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .12s;}
-  .palette-piece img{width:36px;height:36px;}
-  .palette-piece.selected{border-color:var(--accent);background:rgba(233,69,96,.15);}
-  .palette-piece.eraser{font-size:20px;}
   /* Portrait: move list normal height */
   .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;}
   /* Landscape: board left, side panel right — move list + annotation fill height */
@@ -193,10 +193,7 @@
         <div class="db-title" id="db-title">Database</div>
         <div class="db-count" id="db-count"></div>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="openPositionEditor()">🔍 Position</button>
-        <button onclick="resetViewer()">← New file</button>
-      </div>
+      <button onclick="resetViewer()">← New file</button>
     </div>
     <div class="search-bar">
       <span class="search-icon">🔍</span>
@@ -208,33 +205,6 @@
       <span class="game-jump-val" id="game-jump-val">1</span>
     </div>
     <div class="game-list-scroll"><div class="game-list" id="game-list"></div></div>
-  </div>
-
-  <!-- Position editor panel -->
-  <div id="pos-editor-panel" style="display:none;flex-direction:column;gap:12px;">
-    <div class="db-header">
-      <div>
-        <div class="db-title">Position Search</div>
-        <div class="db-count" id="pos-status">Place pieces then tap Search</div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button onclick="clearEditorBoard()">Clear</button>
-        <button onclick="useCurrentPosition()">Use current</button>
-        <button onclick="closePositionEditor()">← Back</button>
-      </div>
-    </div>
-    <!-- Piece palette -->
-    <div class="piece-palette" id="piece-palette"></div>
-    <!-- Editor board -->
-    <div class="board-wrap"><canvas id="editor-canvas"></canvas></div>
-    <button class="btn-accent" onclick="runPositionSearch()" style="padding:12px;font-size:14px;font-weight:700;">🔍 Search all games</button>
-    <!-- Search results -->
-    <div id="pos-results" style="display:none;flex-direction:column;gap:10px;">
-      <div class="db-header">
-        <div class="db-title" id="pos-results-title">Results</div>
-      </div>
-      <div class="game-list-scroll"><div class="game-list" id="pos-results-list"></div></div>
-    </div>
   </div>
 
   <div id="viewer">
@@ -935,7 +905,7 @@ canvas.addEventListener('click',e=>{
 
 // ── Stockfish 18 engine ───────────────────────────────────────────────────────
 let engineOn=false,sf=null,engineReady=false,engineDepth=20;
-let engineTimer=null, engineSearchId=0;
+let engineTimer=null,engineSearchId=0,currentSearchId=0;
 
 function toggleEngine(){
   engineOn=!engineOn;
@@ -955,10 +925,8 @@ function toggleEngine(){
 
 function cancelEngine(){
   if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
-  engineSearchId++; // invalidate any in-flight results
-  if(sf&&engineReady){
-    try{sf.postMessage('stop');}catch(e){}
-  }
+  engineSearchId++;
+  if(sf&&engineReady){try{sf.postMessage('stop');}catch(e){}}
 }
 
 function initStockfish(){
@@ -966,10 +934,7 @@ function initStockfish(){
   try{
     sf=new Worker('./stockfish-18-lite-single.js');
     sf.onmessage=e=>handleSFMessage(e.data);
-    sf.onerror=()=>{
-      engineReady=false;sf=null;
-      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';
-    };
+    sf.onerror=()=>{engineReady=false;sf=null;document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';};
     sf.postMessage('uci');
   }catch(err){
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine unavailable in this browser.</div>';
@@ -977,22 +942,13 @@ function initStockfish(){
 }
 
 function handleSFMessage(msg){
-  if(msg==='uciok'){
-    try{sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}catch(e){}
-  }
-  if(msg==='readyok'){
-    engineReady=true;
-    if(engineOn)triggerEngine();
-  }
-  if(msg.startsWith('info')&&msg.includes(' pv ')){
-    parseInfoLine(msg);
-  }
+  if(msg==='uciok'){try{sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}catch(e){}}
+  if(msg==='readyok'){engineReady=true;if(engineOn)triggerEngine();}
+  if(msg.startsWith('info')&&msg.includes(' pv ')){parseInfoLine(msg);}
 }
 
 const sfLines={};
-let currentSearchId=0;
 function parseInfoLine(msg){
-  // Ignore stale results from a previous position
   if(currentSearchId!==engineSearchId)return;
   const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),
         cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),
@@ -1002,13 +958,33 @@ function parseInfoLine(msg){
   let evalStr='';
   if(cpM){const cp=parseInt(cpM[1]);evalStr=(cp>=0?'+':'')+(cp/100).toFixed(2);}
   else if(mateM){evalStr='M'+Math.abs(parseInt(mateM[1]));}
-  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),
-                cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
+  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
+  renderEngineLines();
+}
+
+function handleSFMessage(msg){
+  if(msg==='uciok'){sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}
+  if(msg==='readyok'){engineReady=true;triggerEngine();}
+  if(msg.startsWith('info')&&msg.includes(' pv ')){
+    parseInfoLine(msg);
+  }
+}
+
+const sfLines={};
+function parseInfoLine(msg){
+  const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),mpvM=msg.match(/multipv (\d+)/);
+  if(!mpvM||!pvM)return;
+  const idx=parseInt(mpvM[1]);
+  let evalStr='';
+  if(cpM){const cp=parseInt(cpM[1]);const pawns=(cp/100).toFixed(2);evalStr=(cp>=0?'+':'')+pawns;}
+  else if(mateM){evalStr='M'+Math.abs(parseInt(mateM[1]));}
+  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
   renderEngineLines();
 }
 
 function uciBoardFEN(){
-  const board=state.board,isWhite=getCurrentIsWhite();
+  const board=state.board;
+  const isWhite=getCurrentIsWhite();
   const rows=board.map(row=>{
     let s='',e=0;
     for(const p of row){if(!p)e++;else{if(e){s+=e;e=0;}s+=p[0]==='w'?p[1].toUpperCase():p[1].toLowerCase();}}
@@ -1019,25 +995,18 @@ function uciBoardFEN(){
 
 function triggerEngine(){
   if(!engineOn||!engineReady)return;
-  cancelEngine(); // stop any current search + clear timer
+  cancelEngine();
   engineTimer=setTimeout(()=>{
     engineTimer=null;
     sfLines[1]=null;sfLines[2]=null;
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Analysing…</div>';
-    // Assign a new search ID — any info lines with old ID will be ignored
-    engineSearchId++;
-    currentSearchId=engineSearchId;
+    engineSearchId++;currentSearchId=engineSearchId;
     try{
       sf.postMessage('stop');
       sf.postMessage('position fen '+uciBoardFEN());
       sf.postMessage('go depth '+engineDepth);
-    }catch(e){
-      // Worker died — recreate it
-      sf=null;engineReady=false;
-      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Restarting engine…</div>';
-      initStockfish();
-    }
-  },300); // 300ms debounce — waits for rapid navigation to settle
+    }catch(e){sf=null;engineReady=false;initStockfish();}
+  },300);
 }
 
 function renderEngineLines(){
@@ -1049,7 +1018,7 @@ function renderEngineLines(){
     const row=document.createElement('div');row.className='engine-line';
     const ev=document.createElement('div');ev.className='engine-eval';
     const cpVal=line.cp!==null?(isWhite?line.cp:-line.cp):null;
-    ev.textContent=line.eval??(cpVal!==null?((cpVal>=0?'+':'')+(cpVal/100).toFixed(2)):'');
+    ev.textContent=line.eval??(cpVal!==null?((cpVal>=0?'+':'')+( cpVal/100).toFixed(2)):'');
     if(cpVal!==null&&cpVal<0)ev.classList.add('neg');
     const moves=document.createElement('div');moves.className='engine-moves';
     moves.textContent=line.pv.join(' ')+(line.depth?` (d${line.depth})`:'');
@@ -1131,11 +1100,9 @@ function openGameByDbIndex(dbIdx){
   currentDbIdx=dbIdx;
   if(state.currentFilename)saveLastGame(state.currentFilename,dbIdx);
   // Sync jump slider if visible
-  try {
-    const slider=document.getElementById('game-jump-slider');
-    const fi=filteredIndices.indexOf(dbIdx);
-    if(fi>=0&&slider){slider.value=fi+1;document.getElementById('game-jump-val').textContent=(fi+1)+' / '+filteredIndices.length;}
-  } catch(e) {}
+  const slider=document.getElementById('game-jump-slider');
+  const fi=filteredIndices.indexOf(dbIdx);
+  if(fi>=0){slider.value=fi+1;document.getElementById('game-jump-val').textContent=(fi+1)+' / '+filteredIndices.length;}
   const fenData=g.fen?parseFEN(g.fen):{board:initBoard(),isWhite:true};
   const initB=fenData.board;
   state.headers=g.headers;state.moves=g.tokens;state.annotations=g.annotations;
@@ -1198,19 +1165,15 @@ function loadFromTextarea(){
 document.getElementById('file-input').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;
   try{
-    // Try modern File.text() first — works better on managed iPads
     const text=await file.text();
     loadPGNText(text,file.name);
   }catch(err){
-    // Fallback to FileReader
     try{
       const reader=new FileReader();
       reader.onload=ev=>loadPGNText(ev.target.result,file.name);
       reader.onerror=()=>alert('Could not read file. Try pasting the PGN text instead.');
       reader.readAsText(file);
-    }catch(e2){
-      alert('Could not read file. Try pasting the PGN text instead.');
-    }
+    }catch(e2){alert('Could not read file. Try pasting the PGN text instead.');}
   }
   e.target.value='';
 });
@@ -1223,230 +1186,6 @@ dz.addEventListener('drop',e=>{
   const file=e.dataTransfer.files[0];
   if(file){const r=new FileReader();r.onload=ev=>loadPGNText(ev.target.result,file.name);r.readAsText(file);}
 });
-
-// ── Position Editor ───────────────────────────────────────────────────────────
-let editorBoard = null;
-let selectedPalettePiece = null; // e.g. 'wQ', 'bN', or 'erase'
-const editorCanvas = document.getElementById('editor-canvas');
-const editorCtx = editorCanvas.getContext('2d');
-
-function openPositionEditor() {
-  // Start with blank board
-  editorBoard = Array.from({length:8}, ()=>Array(8).fill(null));
-  selectedPalettePiece = null;
-  document.getElementById('game-list-panel').style.display = 'none';
-  const panel = document.getElementById('pos-editor-panel');
-  panel.style.display = 'flex'; panel.style.flexDirection = 'column';
-  document.getElementById('pos-results').style.display = 'none';
-  document.getElementById('pos-status').textContent = 'Place pieces then tap Search';
-  buildPalette();
-  setTimeout(() => { resizeEditorCanvas(); }, 50);
-}
-
-function closePositionEditor() {
-  document.getElementById('pos-editor-panel').style.display = 'none';
-  const p = document.getElementById('game-list-panel');
-  p.style.display = 'flex'; p.style.flexDirection = 'column'; p.style.gap = '10px';
-}
-
-function useCurrentPosition() {
-  if (!state.board) { alert('No game loaded yet.'); return; }
-  editorBoard = cloneBoard(state.board);
-  drawEditorBoard();
-  document.getElementById('pos-status').textContent = 'Position loaded from current game';
-}
-
-function clearEditorBoard() {
-  editorBoard = Array.from({length:8}, ()=>Array(8).fill(null));
-  drawEditorBoard();
-  document.getElementById('pos-status').textContent = 'Board cleared';
-}
-
-function buildPalette() {
-  const palette = document.getElementById('piece-palette');
-  palette.innerHTML = '';
-  const pieces = ['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];
-  pieces.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'palette-piece';
-    div.dataset.piece = p;
-    const img = new Image();
-    img.src = PIECE_URLS[p]; img.style.width='36px'; img.style.height='36px';
-    div.appendChild(img);
-    div.addEventListener('click', () => selectPalettePiece(p, div));
-    div.addEventListener('touchend', e => { e.preventDefault(); selectPalettePiece(p, div); });
-    palette.appendChild(div);
-  });
-  // Eraser
-  const eraser = document.createElement('div');
-  eraser.className = 'palette-piece eraser';
-  eraser.dataset.piece = 'erase';
-  eraser.textContent = '✕';
-  eraser.title = 'Erase';
-  eraser.addEventListener('click', () => selectPalettePiece('erase', eraser));
-  eraser.addEventListener('touchend', e => { e.preventDefault(); selectPalettePiece('erase', eraser); });
-  palette.appendChild(eraser);
-}
-
-function selectPalettePiece(piece, el) {
-  selectedPalettePiece = piece;
-  document.querySelectorAll('.palette-piece').forEach(d => d.classList.remove('selected'));
-  el.classList.add('selected');
-}
-
-function resizeEditorCanvas() {
-  const wrap = editorCanvas.parentElement;
-  const w = wrap.offsetWidth;
-  editorCanvas.width = w * window.devicePixelRatio;
-  editorCanvas.height = w * window.devicePixelRatio;
-  editorCanvas.style.width = w + 'px';
-  editorCanvas.style.height = w + 'px';
-  loadPieces().then(() => drawEditorBoard());
-}
-
-function drawEditorBoard() {
-  const size = editorCanvas.width, sq = size / 8;
-  for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
-    const light = (r + c) % 2 === 0;
-    editorCtx.fillStyle = light ? '#F0D9B5' : '#B58863';
-    editorCtx.fillRect(c*sq, r*sq, sq, sq);
-    const piece = editorBoard[r][c];
-    if (piece && IMAGE_CACHE[piece]) {
-      const pad = sq * 0.04;
-      editorCtx.drawImage(IMAGE_CACHE[piece], c*sq+pad, r*sq+pad, sq-pad*2, sq-pad*2);
-    }
-    // Coordinates
-    if (c === 0) {
-      editorCtx.fillStyle = light ? '#B58863' : '#F0D9B5';
-      editorCtx.font = `bold ${sq*0.22}px sans-serif`;
-      editorCtx.textAlign = 'left'; editorCtx.textBaseline = 'top';
-      editorCtx.fillText(8-r, c*sq+3, r*sq+3);
-    }
-    if (r === 7) {
-      editorCtx.fillStyle = light ? '#B58863' : '#F0D9B5';
-      editorCtx.font = `bold ${sq*0.22}px sans-serif`;
-      editorCtx.textAlign = 'right'; editorCtx.textBaseline = 'bottom';
-      editorCtx.fillText(String.fromCharCode(97+c), (c+1)*sq-3, (r+1)*sq-3);
-    }
-  }
-}
-
-// Tap on editor board
-editorCanvas.addEventListener('click', e => handleEditorTap(e));
-editorCanvas.addEventListener('touchend', e => {
-  e.preventDefault();
-  handleEditorTap(e.changedTouches[0]);
-});
-
-function handleEditorTap(e) {
-  if (!selectedPalettePiece) {
-    document.getElementById('pos-status').textContent = 'Select a piece from the palette first';
-    return;
-  }
-  const rect = editorCanvas.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / rect.width * editorCanvas.width;
-  const y = (e.clientY - rect.top) / rect.height * editorCanvas.height;
-  const sq = editorCanvas.width / 8;
-  const c = Math.floor(x / sq), r = Math.floor(y / sq);
-  if (r < 0 || r > 7 || c < 0 || c > 7) return;
-  editorBoard[r][c] = selectedPalettePiece === 'erase' ? null : selectedPalettePiece;
-  loadPieces().then(() => drawEditorBoard());
-}
-
-// ── Position search ────────────────────────────────────────────────────────────
-function boardsMatch(a, b) {
-  for (let r = 0; r < 8; r++)
-    for (let c = 0; c < 8; c++)
-      if ((a[r][c] || null) !== (b[r][c] || null)) return false;
-  return true;
-}
-
-async function runPositionSearch() {
-  // Check editor board has at least one piece
-  const hasPiece = editorBoard.some(row => row.some(sq => sq !== null));
-  if (!hasPiece) { alert('Place at least one piece on the board first.'); return; }
-
-  const btn = document.querySelector('#pos-editor-panel .btn-accent');
-  btn.textContent = 'Searching…'; btn.disabled = true;
-  document.getElementById('pos-status').textContent = 'Searching…';
-
-  const results = [];
-  // Search each game
-  for (let gi = 0; gi < db.length; gi++) {
-    const g = db[gi];
-    // Build full history for this game
-    const fenData = g.fen ? parseFEN(g.fen) : { board: initBoard(), isWhite: true };
-    const history = buildHistory(g.tokens, fenData.board, fenData.isWhite);
-    // Check each position in history
-    for (let hi = 0; hi < history.length; hi++) {
-      if (boardsMatch(history[hi].board, editorBoard)) {
-        results.push({ gameIdx: gi, moveIdx: hi - 1 }); // moveIdx -1 = starting pos
-        break; // one match per game is enough
-      }
-    }
-    // Yield to UI every 20 games so browser doesn't freeze
-    if (gi % 20 === 0) {
-      document.getElementById('pos-status').textContent = `Searching… ${gi+1} / ${db.length}`;
-      await new Promise(r => setTimeout(r, 0));
-    }
-  }
-
-  btn.textContent = '🔍 Search all games'; btn.disabled = false;
-  showPositionResults(results);
-}
-
-function showPositionResults(results) {
-  const resDiv = document.getElementById('pos-results');
-  const resList = document.getElementById('pos-results-list');
-  const title = document.getElementById('pos-results-title');
-  resList.innerHTML = '';
-
-  if (!results.length) {
-    title.textContent = 'No matching games found';
-    resDiv.style.display = 'flex'; resDiv.style.flexDirection = 'column';
-    document.getElementById('pos-status').textContent = 'No matches found';
-    return;
-  }
-
-  title.textContent = `${results.length} game${results.length>1?'s':''} found`;
-  document.getElementById('pos-status').textContent = `Found in ${results.length} game${results.length>1?'s':''}`;
-
-  results.forEach(({gameIdx, moveIdx}) => {
-    const h = db[gameIdx].headers;
-    const _w = (h['White']||'').replace(/
-/g,'').trim();
-    const _s = (h['Site']||'').replace(/
-/g,'').trim();
-    const isChapter = _w && _s && _w === _s;
-    const title2 = isChapter ? (_s || _w) : `${h['White']||'?'} vs ${h['Black']||'?'}`;
-    const moveLabel = moveIdx < 0 ? 'Starting position' : `Move ${Math.floor(moveIdx/2)+1} (${moveIdx%2===0?'after White':'after Black'})`;
-
-    const el = document.createElement('div');
-    el.className = 'game-item';
-    el.innerHTML = `
-      <span class="game-num">${gameIdx+1}</span>
-      <div class="game-item-info">
-        <div class="game-players">${title2}</div>
-        <div class="game-detail">${moveLabel}</div>
-      </div>
-      <span class="game-result-badge">${h['Result']||''}</span>`;
-    el.addEventListener('click', () => {
-      closePositionEditor();
-      openGameByDbIndex(gameIdx);
-      // Navigate to the found move after game loads
-      setTimeout(() => { if(moveIdx >= 0) goTo(moveIdx); }, 400);
-    });
-    el.addEventListener('touchend', e => {
-      e.preventDefault();
-      closePositionEditor();
-      openGameByDbIndex(gameIdx);
-      setTimeout(() => { if(moveIdx >= 0) goTo(moveIdx); }, 400);
-    });
-    resList.appendChild(el);
-  });
-
-  resDiv.style.display = 'flex'; resDiv.style.flexDirection = 'column';
-}
 
 // ── Autoplay ──────────────────────────────────────────────────────────────────
 let autoplayTimer=null, autoplaySpeed=1000;
@@ -1496,7 +1235,7 @@ function onSpeedChange(){
   if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
 }
 
-// Autoplay stops on manual navigation — handled inside goTo directly
+
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
