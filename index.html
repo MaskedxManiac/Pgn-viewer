@@ -79,12 +79,6 @@
   .board-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);flex-shrink:0;}
   canvas#board-canvas{width:100%;height:100%;display:block;touch-action:none;}
   .side-panel{display:flex;flex-direction:column;gap:8px;}
-  /* Portrait: move list normal height */
-  .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;}
-  /* Landscape */
-  @media (orientation:landscape) and (min-width:600px) {
-    .move-list-wrap{max-height:45%;overflow-y:auto;flex-shrink:0;}
-  }
   .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;overflow-y:auto;}
   .annotation-placeholder{color:var(--muted);font-style:italic;font-size:12px;}
   /* Portrait: move list normal height */
@@ -616,7 +610,6 @@ function resizeCanvas(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goTo(idx){
   if(idx<-1||idx>=state.history.length-1)return;
-  stopAutoplay();
   state.inVariation=false;
   state.currentMove=idx;
   const snap=state.history[idx+1];
@@ -904,8 +897,7 @@ canvas.addEventListener('click',e=>{
 });
 
 // ── Stockfish 18 engine ───────────────────────────────────────────────────────
-let engineOn=false,sf=null,engineReady=false,engineDepth=20;
-let engineTimer=null,engineSearchId=0,currentSearchId=0;
+let engineOn=false,sf=null,engineReady=false,engineDepth=20,engineThinking=false;
 
 function toggleEngine(){
   engineOn=!engineOn;
@@ -919,47 +911,24 @@ function toggleEngine(){
   }else{
     btn.classList.remove('btn-on');btn.textContent='⚙ Engine';
     panel.classList.remove('visible');
-    cancelEngine();
+    if(sf&&engineThinking){sf.postMessage('stop');}
   }
-}
-
-function cancelEngine(){
-  if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
-  engineSearchId++;
-  if(sf&&engineReady){try{sf.postMessage('stop');}catch(e){}}
 }
 
 function initStockfish(){
   document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Loading Stockfish 18…</div>';
+  // Load from same origin (repo) — avoids all CORS/CSP issues
   try{
     sf=new Worker('./stockfish-18-lite-single.js');
     sf.onmessage=e=>handleSFMessage(e.data);
-    sf.onerror=()=>{engineReady=false;sf=null;document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';};
+    sf.onerror=err=>{
+      console.error('SF error',err);
+      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';
+    };
     sf.postMessage('uci');
   }catch(err){
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine unavailable in this browser.</div>';
   }
-}
-
-function handleSFMessage(msg){
-  if(msg==='uciok'){try{sf.postMessage('setoption name MultiPV value 2');sf.postMessage('isready');}catch(e){}}
-  if(msg==='readyok'){engineReady=true;if(engineOn)triggerEngine();}
-  if(msg.startsWith('info')&&msg.includes(' pv ')){parseInfoLine(msg);}
-}
-
-const sfLines={};
-function parseInfoLine(msg){
-  if(currentSearchId!==engineSearchId)return;
-  const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),
-        cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),
-        mpvM=msg.match(/multipv (\d+)/);
-  if(!mpvM||!pvM)return;
-  const idx=parseInt(mpvM[1]);
-  let evalStr='';
-  if(cpM){const cp=parseInt(cpM[1]);evalStr=(cp>=0?'+':'')+(cp/100).toFixed(2);}
-  else if(mateM){evalStr='M'+Math.abs(parseInt(mateM[1]));}
-  sfLines[idx]={eval:evalStr,pv:pvM[1].trim().split(' ').slice(0,8),cp:cpM?parseInt(cpM[1]):null,depth:depthM?parseInt(depthM[1]):0};
-  renderEngineLines();
 }
 
 function handleSFMessage(msg){
@@ -993,20 +962,18 @@ function uciBoardFEN(){
   return rows.join('/')+(isWhite?' w ':' b ')+'- - 0 '+(state.fenMoveNum||1);
 }
 
+let engineTimer=null;
 function triggerEngine(){
   if(!engineOn||!engineReady)return;
-  cancelEngine();
+  if(engineTimer)clearTimeout(engineTimer);
   engineTimer=setTimeout(()=>{
-    engineTimer=null;
     sfLines[1]=null;sfLines[2]=null;
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Analysing…</div>';
-    engineSearchId++;currentSearchId=engineSearchId;
-    try{
-      sf.postMessage('stop');
-      sf.postMessage('position fen '+uciBoardFEN());
-      sf.postMessage('go depth '+engineDepth);
-    }catch(e){sf=null;engineReady=false;initStockfish();}
-  },300);
+    engineThinking=true;
+    sf.postMessage('stop');
+    sf.postMessage('position fen '+uciBoardFEN());
+    sf.postMessage('go depth '+engineDepth);
+  },120);
 }
 
 function renderEngineLines(){
@@ -1162,20 +1129,9 @@ function loadFromTextarea(){
   loadPGNText(pgn,'Pasted PGN');
 }
 
-document.getElementById('file-input').addEventListener('change',async e=>{
+document.getElementById('file-input').addEventListener('change',e=>{
   const file=e.target.files[0];if(!file)return;
-  try{
-    const text=await file.text();
-    loadPGNText(text,file.name);
-  }catch(err){
-    try{
-      const reader=new FileReader();
-      reader.onload=ev=>loadPGNText(ev.target.result,file.name);
-      reader.onerror=()=>alert('Could not read file. Try pasting the PGN text instead.');
-      reader.readAsText(file);
-    }catch(e2){alert('Could not read file. Try pasting the PGN text instead.');}
-  }
-  e.target.value='';
+  const reader=new FileReader();reader.onload=ev=>loadPGNText(ev.target.result,file.name);reader.readAsText(file);e.target.value='';
 });
 
 const dz=document.getElementById('drop-zone');
@@ -1235,7 +1191,9 @@ function onSpeedChange(){
   if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
 }
 
-
+// Stop autoplay when user manually navigates
+const _origGoTo=goTo;
+goTo=function(idx){ stopAutoplay(); _origGoTo(idx); };
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
