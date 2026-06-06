@@ -70,10 +70,21 @@
   .vs{font-size:11px;color:var(--muted);font-weight:600;}
   .game-meta{font-size:11px;color:var(--muted);margin-top:6px;}
   .result-badge{display:inline-block;background:rgba(233,69,96,.15);color:var(--accent);border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px;}
-  .board-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);}
+  /* Portrait: board full width, annotation below */
+  .board-annotation-row{display:flex;flex-direction:column;gap:10px;width:100%;}
+  .board-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);flex-shrink:0;}
   canvas#board-canvas{width:100%;height:100%;display:block;touch-action:none;}
-  .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;display:none;}
-  .annotation-box.visible{display:block;}
+  .side-panel{display:flex;flex-direction:column;gap:8px;}
+  .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;flex:1;overflow-y:auto;}
+  .annotation-placeholder{color:var(--muted);font-style:italic;font-size:12px;}
+  /* Landscape: board left, annotation right */
+  @media (orientation:landscape) and (min-width:600px) {
+    .container{max-width:100%;padding:10px 16px;}
+    .board-annotation-row{flex-direction:row;align-items:flex-start;gap:12px;}
+    .board-wrap{width:min(50vw,calc(100vh - 120px));flex-shrink:0;}
+    .side-panel{flex:1;min-width:0;height:min(50vw,calc(100vh - 120px));display:flex;flex-direction:column;}
+    .annotation-box{flex:1;overflow-y:auto;min-height:0;}
+  }
 
   /* Engine panel */
   .engine-panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none;}
@@ -184,9 +195,15 @@
       </div>
     </div>
     <div class="game-info" id="game-info"></div>
-    <div class="board-wrap"><canvas id="board-canvas"></canvas></div>
-    <div class="status-bar" id="status-bar"></div>
-    <div class="annotation-box" id="annotation-box"></div>
+    <div class="board-annotation-row">
+      <div class="board-wrap"><canvas id="board-canvas"></canvas></div>
+      <div class="side-panel">
+        <div class="status-bar" id="status-bar"></div>
+        <div class="annotation-box" id="annotation-box">
+          <div class="annotation-placeholder">No annotation for this move</div>
+        </div>
+      </div>
+    </div>
 
     <!-- Engine panel -->
     <div class="engine-panel" id="engine-panel">
@@ -620,8 +637,13 @@ function showAnnotation(){
   const box=document.getElementById('annotation-box');
   const cur=state.inVariation?-99:state.currentMove;
   const text=cur===-1?(state.gameComment||null):(state.annotations[cur]||null);
-  if(text){box.textContent=text;box.classList.add('visible');}
-  else{box.textContent='';box.classList.remove('visible');}
+  if(text){
+    box.innerHTML='<span>'+text.replace(/</g,'&lt;')+'</span>';
+    box.classList.add('visible');
+  }else{
+    box.innerHTML='<div class="annotation-placeholder">No annotation for this move</div>';
+    box.classList.add('visible');
+  }
 }
 
 // ── Analysis — tap to move ────────────────────────────────────────────────────
