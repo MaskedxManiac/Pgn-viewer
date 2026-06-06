@@ -75,14 +75,17 @@
   .board-wrap{position:relative;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.5);flex-shrink:0;}
   canvas#board-canvas{width:100%;height:100%;display:block;touch-action:none;}
   .side-panel{display:flex;flex-direction:column;gap:8px;}
-  .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;flex:1;overflow-y:auto;}
+  .annotation-box{background:var(--panel);border:1px solid rgba(233,69,96,.25);border-left:3px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:13px;color:#ccd8e8;line-height:1.6;overflow-y:auto;}
   .annotation-placeholder{color:var(--muted);font-style:italic;font-size:12px;}
-  /* Landscape: board left, annotation right */
+  /* Portrait: move list normal height */
+  .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:180px;overflow-y:auto;}
+  /* Landscape: board left, side panel right — move list + annotation fill height */
   @media (orientation:landscape) and (min-width:600px) {
     .container{max-width:100%;padding:10px 16px;}
     .board-annotation-row{flex-direction:row;align-items:flex-start;gap:12px;}
     .board-wrap{width:min(50vw,calc(100vh - 120px));flex-shrink:0;}
-    .side-panel{flex:1;min-width:0;height:min(50vw,calc(100vh - 120px));display:flex;flex-direction:column;}
+    .side-panel{flex:1;min-width:0;height:min(50vw,calc(100vh - 120px));display:flex;flex-direction:column;gap:6px;}
+    .move-list-wrap{max-height:45%;overflow-y:auto;flex-shrink:0;}
     .annotation-box{flex:1;overflow-y:auto;min-height:0;}
   }
 
@@ -209,6 +212,7 @@
           <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
           <span id="speed-val">1.0s</span>
         </div>
+        <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
         <div class="annotation-box" id="annotation-box">
           <div class="annotation-placeholder">No annotation for this move</div>
         </div>
@@ -243,7 +247,7 @@
       <button onclick="nextMove()">▶</button>
       <button onclick="goToEnd()">⏭</button>
     </div>
-    <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
+
   </div>
 </div>
 
