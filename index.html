@@ -1164,6 +1164,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')nextMove();if(e.key==='ArrowLeft')prevMove();
   if(e.key==='ArrowUp')goToStart();if(e.key==='ArrowDown')goToEnd();
   if(e.key==='PageUp')prevGame();if(e.key==='PageDown')nextGame();
+  if(e.key==='b'||e.key==='B')prevGame();
+  if(e.key==='n'||e.key==='N')nextGame();
+  if(e.key==='f'||e.key==='F')flipBoard();
   if(e.key==='Escape'){selectedSq=null;legalDests=[];loadPieces().then(()=>drawBoard());}
 });
 
