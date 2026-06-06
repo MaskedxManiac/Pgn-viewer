@@ -872,7 +872,7 @@ canvas.addEventListener('click',e=>{
   const[x,y]=canvasCoords(e);handleBoardTap(x,y);
 });
 
-// ── Stockfish engine ──────────────────────────────────────────────────────────
+// ── Stockfish 18 engine ───────────────────────────────────────────────────────
 let engineOn=false,sf=null,engineReady=false,engineDepth=20,engineThinking=false;
 
 function toggleEngine(){
@@ -883,7 +883,7 @@ function toggleEngine(){
     btn.classList.add('btn-on');btn.textContent='⚙ Engine ON';
     panel.classList.add('visible');
     if(!sf)initStockfish();
-    else triggerEngine();
+    else if(engineReady)triggerEngine();
   }else{
     btn.classList.remove('btn-on');btn.textContent='⚙ Engine';
     panel.classList.remove('visible');
@@ -892,14 +892,21 @@ function toggleEngine(){
 }
 
 function initStockfish(){
-  document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Loading Stockfish…</div>';
+  document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Loading Stockfish 18…</div>';
+  // Use a Blob worker with importScripts to bypass cross-origin Worker restriction
+  const sfUrl='https://cdn.jsdelivr.net/npm/stockfish@18.0.0/src/stockfish-lite-single.js';
+  const blob=new Blob([`importScripts('${sfUrl}');`],{type:'application/javascript'});
+  const blobUrl=URL.createObjectURL(blob);
   try{
-    sf=new Worker('https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish.js');
+    sf=new Worker(blobUrl);
     sf.onmessage=e=>handleSFMessage(e.data);
-    sf.onerror=()=>{document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';};
+    sf.onerror=err=>{
+      console.error('SF error',err);
+      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load. Check your internet connection.</div>';
+    };
     sf.postMessage('uci');
   }catch(err){
-    document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine unavailable.</div>';
+    document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine unavailable in this browser.</div>';
   }
 }
 
