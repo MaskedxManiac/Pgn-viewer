@@ -222,8 +222,6 @@
           <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
           <span id="speed-val">1.0s</span>
         </div>
-        <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
-        <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
         <div class="annotation-box" id="annotation-box">
           <div class="annotation-placeholder">No annotation for this move</div>
         </div>
@@ -1218,6 +1216,9 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowRight')nextMove();if(e.key==='ArrowLeft')prevMove();
   if(e.key==='ArrowUp')goToStart();if(e.key==='ArrowDown')goToEnd();
   if(e.key==='PageUp')prevGame();if(e.key==='PageDown')nextGame();
+  if(e.key==='b'||e.key==='B')prevGame();
+  if(e.key==='n'||e.key==='N')nextGame();
+  if(e.key==='f'||e.key==='F')flipBoard();
   if(e.key==='b'||e.key==='B')prevGame();
   if(e.key==='n'||e.key==='N')nextGame();
   if(e.key==='f'||e.key==='F')flipBoard();
