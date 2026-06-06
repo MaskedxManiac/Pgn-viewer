@@ -125,8 +125,13 @@
   .status-bar{font-size:12px;color:var(--muted);text-align:center;padding:2px 0;}
   .status-bar.check{color:#f5a623;font-weight:600;}
   .status-bar.checkmate{color:var(--accent);font-weight:700;}
-  .toolbar-row{display:flex;gap:8px;align-items:center;}
+  .toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .toolbar-row button{padding:7px 12px;font-size:12px;}
+  .speed-slider{display:none;align-items:center;gap:6px;width:100%;}
+  .speed-slider.visible{display:flex;}
+  .speed-slider label{font-size:11px;color:var(--muted);}
+  .speed-slider input{flex:1;accent-color:var(--accent);}
+  .speed-slider span{font-size:11px;color:var(--text);min-width:32px;}
 
   /* Promotion dialog */
   .promo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;display:none;}
@@ -222,7 +227,14 @@
 
     <div class="toolbar-row">
       <button id="engine-btn" onclick="toggleEngine()">⚙ Engine</button>
+      <button id="autoplay-btn" onclick="toggleAutoplay()">▶ Autoplay</button>
       <button onclick="clearVariations()" style="font-size:12px;padding:7px 12px;">✕ Clear variations</button>
+    </div>
+
+    <div class="speed-slider" id="speed-slider">
+      <label>Speed</label>
+      <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
+      <span id="speed-val">1.0s</span>
     </div>
 
     <div class="controls">
@@ -1094,6 +1106,58 @@ dz.addEventListener('drop',e=>{
   const file=e.dataTransfer.files[0];
   if(file){const r=new FileReader();r.onload=ev=>loadPGNText(ev.target.result,file.name);r.readAsText(file);}
 });
+
+// ── Autoplay ──────────────────────────────────────────────────────────────────
+let autoplayTimer=null, autoplaySpeed=1000;
+
+function toggleAutoplay(){
+  if(autoplayTimer){
+    stopAutoplay();
+  } else {
+    startAutoplay();
+  }
+}
+
+function startAutoplay(){
+  const btn=document.getElementById('autoplay-btn');
+  const slider=document.getElementById('speed-slider');
+  btn.classList.add('btn-on');
+  btn.textContent='⏹ Stop';
+  slider.classList.add('visible');
+  // If at end, restart from beginning
+  if(!state.inVariation && state.currentMove>=state.history.length-2) goTo(-1);
+  scheduleNext();
+}
+
+function scheduleNext(){
+  autoplayTimer=setTimeout(()=>{
+    const atEnd=!state.inVariation && state.currentMove>=state.history.length-2;
+    if(atEnd){ stopAutoplay(); return; }
+    nextMove();
+    scheduleNext();
+  }, autoplaySpeed);
+}
+
+function stopAutoplay(){
+  clearTimeout(autoplayTimer);
+  autoplayTimer=null;
+  const btn=document.getElementById('autoplay-btn');
+  btn.classList.remove('btn-on');
+  btn.textContent='▶ Autoplay';
+}
+
+function onSpeedChange(){
+  const val=parseInt(document.getElementById('speed-input').value);
+  autoplaySpeed=val;
+  const secs=(val/1000).toFixed(1);
+  document.getElementById('speed-val').textContent=secs+'s';
+  // Restart timer with new speed if playing
+  if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
+}
+
+// Stop autoplay when user manually navigates
+const _origGoTo=goTo;
+goTo=function(idx){ stopAutoplay(); _origGoTo(idx); };
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
