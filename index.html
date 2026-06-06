@@ -90,6 +90,7 @@
     .board-wrap{width:min(50vw,calc(100vh - 120px));flex-shrink:0;}
     .side-panel{flex:1;min-width:0;height:min(50vw,calc(100vh - 120px));display:flex;flex-direction:column;gap:6px;}
     .move-list-wrap{max-height:45%;overflow-y:auto;flex-shrink:0;}
+    .move-list-wrap{max-height:40%;}
     .annotation-box{flex:1;overflow-y:auto;min-height:0;}
   }
 
@@ -112,7 +113,7 @@
   .controls{display:flex;gap:8px;justify-content:center;align-items:center;}
   .controls button{flex:1;max-width:56px;padding:10px 0;font-size:18px;display:flex;align-items:center;justify-content:center;}
   .move-counter{flex:2;text-align:center;font-size:13px;color:var(--muted);font-weight:500;}
-  .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:200px;overflow-y:auto;}
+  .move-list-wrap{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;max-height:200px;overflow-y:auto;flex-shrink:0;}
   .move-list{font-size:13px;font-family:'SF Mono',monospace;line-height:1.7;}
   .main-line{display:flex;flex-wrap:wrap;gap:2px;}
   .move-num{color:var(--muted);padding:4px 2px;min-width:28px;text-align:right;}
@@ -221,6 +222,7 @@
           <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
           <span id="speed-val">1.0s</span>
         </div>
+        <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
         <div class="move-list-wrap"><div class="move-list" id="move-list"></div></div>
         <div class="annotation-box" id="annotation-box">
           <div class="annotation-placeholder">No annotation for this move</div>
@@ -610,6 +612,7 @@ function resizeCanvas(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goTo(idx){
   if(idx<-1||idx>=state.history.length-1)return;
+  stopAutoplay();
   state.inVariation=false;
   state.currentMove=idx;
   const snap=state.history[idx+1];
@@ -941,6 +944,7 @@ function handleSFMessage(msg){
 
 const sfLines={};
 function parseInfoLine(msg){
+  if(currentSearchId!==engineSearchId)return;
   const depthM=msg.match(/depth (\d+)/),pvM=msg.match(/ pv (.+)/),cpM=msg.match(/score cp (-?\d+)/),mateM=msg.match(/score mate (-?\d+)/),mpvM=msg.match(/multipv (\d+)/);
   if(!mpvM||!pvM)return;
   const idx=parseInt(mpvM[1]);
@@ -962,18 +966,24 @@ function uciBoardFEN(){
   return rows.join('/')+(isWhite?' w ':' b ')+'- - 0 '+(state.fenMoveNum||1);
 }
 
-let engineTimer=null;
+let engineTimer=null,engineSearchId=0,currentSearchId=0;
 function triggerEngine(){
   if(!engineOn||!engineReady)return;
-  if(engineTimer)clearTimeout(engineTimer);
+  if(engineTimer){clearTimeout(engineTimer);engineTimer=null;}
+  engineSearchId++;
+  if(sf&&engineReady){try{sf.postMessage('stop');}catch(e){}}
+  const myId=engineSearchId;
   engineTimer=setTimeout(()=>{
+    engineTimer=null;
+    if(myId!==engineSearchId)return;
     sfLines[1]=null;sfLines[2]=null;
+    currentSearchId=myId;
     document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Analysing…</div>';
-    engineThinking=true;
-    sf.postMessage('stop');
-    sf.postMessage('position fen '+uciBoardFEN());
-    sf.postMessage('go depth '+engineDepth);
-  },120);
+    try{
+      sf.postMessage('position fen '+uciBoardFEN());
+      sf.postMessage('go depth '+engineDepth);
+    }catch(e){sf=null;engineReady=false;initStockfish();}
+  },350);
 }
 
 function renderEngineLines(){
@@ -1129,9 +1139,20 @@ function loadFromTextarea(){
   loadPGNText(pgn,'Pasted PGN');
 }
 
-document.getElementById('file-input').addEventListener('change',e=>{
+document.getElementById('file-input').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();reader.onload=ev=>loadPGNText(ev.target.result,file.name);reader.readAsText(file);e.target.value='';
+  try{
+    const text=await file.text();
+    loadPGNText(text,file.name);
+  }catch(err){
+    try{
+      const reader=new FileReader();
+      reader.onload=ev=>loadPGNText(ev.target.result,file.name);
+      reader.onerror=()=>alert('Could not read file. Try pasting the PGN text instead.');
+      reader.readAsText(file);
+    }catch(e2){alert('Could not read file. Try pasting the PGN text instead.');}
+  }
+  e.target.value='';
 });
 
 const dz=document.getElementById('drop-zone');
@@ -1191,9 +1212,6 @@ function onSpeedChange(){
   if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
 }
 
-// Stop autoplay when user manually navigates
-const _origGoTo=goTo;
-goTo=function(idx){ stopAutoplay(); _origGoTo(idx); };
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
