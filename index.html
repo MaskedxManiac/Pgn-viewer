@@ -646,6 +646,7 @@ function resizeCanvas(){
 // ── Navigation ────────────────────────────────────────────────────────────────
 function goTo(idx){
   if(idx<-1||idx>=state.history.length-1)return;
+  stopAutoplay();
   state.inVariation=false;
   state.currentMove=idx;
   const snap=state.history[idx+1];
@@ -1130,9 +1131,11 @@ function openGameByDbIndex(dbIdx){
   currentDbIdx=dbIdx;
   if(state.currentFilename)saveLastGame(state.currentFilename,dbIdx);
   // Sync jump slider if visible
-  const slider=document.getElementById('game-jump-slider');
-  const fi=filteredIndices.indexOf(dbIdx);
-  if(fi>=0){slider.value=fi+1;document.getElementById('game-jump-val').textContent=(fi+1)+' / '+filteredIndices.length;}
+  try {
+    const slider=document.getElementById('game-jump-slider');
+    const fi=filteredIndices.indexOf(dbIdx);
+    if(fi>=0&&slider){slider.value=fi+1;document.getElementById('game-jump-val').textContent=(fi+1)+' / '+filteredIndices.length;}
+  } catch(e) {}
   const fenData=g.fen?parseFEN(g.fen):{board:initBoard(),isWhite:true};
   const initB=fenData.board;
   state.headers=g.headers;state.moves=g.tokens;state.annotations=g.annotations;
@@ -1478,9 +1481,7 @@ function onSpeedChange(){
   if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
 }
 
-// Stop autoplay when user manually navigates
-const _origGoTo=goTo;
-goTo=function(idx){ stopAutoplay(); _origGoTo(idx); };
+// Autoplay stops on manual navigation — handled inside goTo directly
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
