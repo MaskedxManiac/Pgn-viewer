@@ -1195,9 +1195,24 @@ function loadFromTextarea(){
   loadPGNText(pgn,'Pasted PGN');
 }
 
-document.getElementById('file-input').addEventListener('change',e=>{
+document.getElementById('file-input').addEventListener('change',async e=>{
   const file=e.target.files[0];if(!file)return;
-  const reader=new FileReader();reader.onload=ev=>loadPGNText(ev.target.result,file.name);reader.readAsText(file);e.target.value='';
+  try{
+    // Try modern File.text() first — works better on managed iPads
+    const text=await file.text();
+    loadPGNText(text,file.name);
+  }catch(err){
+    // Fallback to FileReader
+    try{
+      const reader=new FileReader();
+      reader.onload=ev=>loadPGNText(ev.target.result,file.name);
+      reader.onerror=()=>alert('Could not read file. Try pasting the PGN text instead.');
+      reader.readAsText(file);
+    }catch(e2){
+      alert('Could not read file. Try pasting the PGN text instead.');
+    }
+  }
+  e.target.value='';
 });
 
 const dz=document.getElementById('drop-zone');
