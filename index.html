@@ -893,16 +893,13 @@ function toggleEngine(){
 
 function initStockfish(){
   document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Loading Stockfish 18…</div>';
-  // Use a Blob worker with importScripts to bypass cross-origin Worker restriction
-  const sfUrl='https://cdn.jsdelivr.net/npm/stockfish@18.0.0/src/stockfish-lite-single.js';
-  const blob=new Blob([`importScripts('${sfUrl}');`],{type:'application/javascript'});
-  const blobUrl=URL.createObjectURL(blob);
+  // Load from same origin (repo) — avoids all CORS/CSP issues
   try{
-    sf=new Worker(blobUrl);
+    sf=new Worker('./stockfish-18-lite-single.js');
     sf.onmessage=e=>handleSFMessage(e.data);
     sf.onerror=err=>{
       console.error('SF error',err);
-      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load. Check your internet connection.</div>';
+      document.getElementById('engine-lines').innerHTML='<div class="engine-thinking">Engine failed to load.</div>';
     };
     sf.postMessage('uci');
   }catch(err){
