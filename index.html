@@ -127,11 +127,11 @@
   .status-bar.checkmate{color:var(--accent);font-weight:700;}
   .toolbar-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
   .toolbar-row button{padding:7px 12px;font-size:12px;}
-  .speed-slider{display:none;align-items:center;gap:6px;width:100%;}
+  .speed-slider{display:none;align-items:center;gap:6px;width:100%;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 12px;flex-shrink:0;}
   .speed-slider.visible{display:flex;}
-  .speed-slider label{font-size:11px;color:var(--muted);}
-  .speed-slider input{flex:1;accent-color:var(--accent);}
-  .speed-slider span{font-size:11px;color:var(--text);min-width:32px;}
+  .speed-slider label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .speed-slider input{flex:1;accent-color:var(--accent);min-width:0;}
+  .speed-slider span{font-size:11px;color:var(--text);min-width:32px;text-align:right;}
 
   /* Promotion dialog */
   .promo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:flex;align-items:center;justify-content:center;display:none;}
@@ -204,6 +204,11 @@
       <div class="board-wrap"><canvas id="board-canvas"></canvas></div>
       <div class="side-panel">
         <div class="status-bar" id="status-bar"></div>
+        <div class="speed-slider" id="speed-slider">
+          <label>Speed</label>
+          <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
+          <span id="speed-val">1.0s</span>
+        </div>
         <div class="annotation-box" id="annotation-box">
           <div class="annotation-placeholder">No annotation for this move</div>
         </div>
@@ -229,12 +234,6 @@
       <button id="engine-btn" onclick="toggleEngine()">⚙ Engine</button>
       <button id="autoplay-btn" onclick="toggleAutoplay()">▶ Autoplay</button>
       <button onclick="clearVariations()" style="font-size:12px;padding:7px 12px;">✕ Clear variations</button>
-    </div>
-
-    <div class="speed-slider" id="speed-slider">
-      <label>Speed</label>
-      <input type="range" id="speed-input" min="200" max="3000" value="1000" step="100" oninput="onSpeedChange()">
-      <span id="speed-val">1.0s</span>
     </div>
 
     <div class="controls">
