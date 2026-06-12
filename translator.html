@@ -6,216 +6,80 @@
 <title>Chess PDF Translator – DE → EN</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
-    --bg: #f7f7f5;
-    --surface: #ffffff;
-    --border: #e0ddd7;
-    --border2: #c8c4bc;
-    --text: #1a1a1a;
-    --muted: #6b6860;
-    --accent: #185FA5;
-    --accent-dk: #0C447C;
-    --green: #3B6D11;
-    --green-bg: #EAF3DE;
-    --red: #A32D2D;
-    --red-bg: #FCEBEB;
-    --amber: #854F0B;
-    --amber-bg: #FAEEDA;
-    --radius: 10px;
-    --radius-sm: 6px;
+    --bg: #f7f7f5; --surface: #ffffff; --border: #e0ddd7; --border2: #c8c4bc;
+    --text: #1a1a1a; --muted: #6b6860; --accent: #185FA5; --accent-dk: #0C447C;
+    --green: #3B6D11; --green-bg: #EAF3DE; --red: #A32D2D; --red-bg: #FCEBEB;
+    --amber: #854F0B; --amber-bg: #FAEEDA; --radius: 10px; --radius-sm: 6px;
   }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 0;
-  }
-
-  /* ── Layout ── */
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
   .app { max-width: 720px; margin: 0 auto; padding: 24px 16px 64px; }
-
   .header { text-align: center; margin-bottom: 28px; }
   .header h1 { font-size: 22px; font-weight: 600; margin-bottom: 4px; }
   .header p { font-size: 14px; color: var(--muted); }
-
-  /* ── Drop zone ── */
-  .drop-zone {
-    border: 2px dashed var(--border2);
-    border-radius: var(--radius);
-    padding: 40px 24px;
-    text-align: center;
-    cursor: pointer;
-    background: var(--surface);
-    transition: border-color 0.2s, background 0.2s;
-    position: relative;
-  }
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--accent);
-    background: #f0f5fb;
-  }
+  .drop-zone { border: 2px dashed var(--border2); border-radius: var(--radius); padding: 40px 24px; text-align: center; cursor: pointer; background: var(--surface); transition: border-color 0.2s, background 0.2s; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: #f0f5fb; }
   .drop-zone input { display: none; }
   .drop-zone .icon { font-size: 40px; margin-bottom: 10px; }
   .drop-zone h2 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
   .drop-zone p { font-size: 13px; color: var(--muted); }
-  .chess-pill {
-    display: inline-block; margin-top: 10px;
-    font-size: 12px; padding: 3px 10px;
-    background: #E6F1FB; color: #185FA5;
-    border-radius: 20px; font-weight: 500;
-  }
-
-  /* ── Resume banner ── */
-  .resume-banner {
-    display: none;
-    background: var(--amber-bg);
-    border: 1px solid #FAC775;
-    border-radius: var(--radius);
-    padding: 14px 16px;
-    margin-bottom: 16px;
-    font-size: 14px;
-    color: var(--amber);
-  }
+  .chess-pill { display: inline-block; margin-top: 10px; font-size: 12px; padding: 3px 10px; background: #E6F1FB; color: #185FA5; border-radius: 20px; font-weight: 500; }
+  .resume-banner { display: none; background: var(--amber-bg); border: 1px solid #FAC775; border-radius: var(--radius); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; color: var(--amber); }
   .resume-banner strong { display: block; margin-bottom: 6px; font-size: 15px; }
   .resume-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .resume-actions button {
-    padding: 7px 16px; border-radius: var(--radius-sm);
-    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
-  }
+  .resume-actions button { padding: 7px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; cursor: pointer; border: none; }
   #btn-resume { background: var(--amber); color: white; }
   #btn-resume:hover { background: #633806; }
   #btn-discard { background: var(--border); color: var(--text); }
-  #btn-discard:hover { background: var(--border2); }
-
-  /* ── Status bar ── */
   .status-wrap { display: none; margin-bottom: 16px; }
-  .status-bar {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 16px;
-    display: flex; align-items: center; gap: 10px;
-    font-size: 14px; color: var(--muted);
-  }
+  .status-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); }
   .status-bar .label { flex: 1; }
   .status-bar .counts { font-weight: 600; color: var(--text); font-size: 13px; }
-  .spinner {
-    width: 18px; height: 18px; flex-shrink: 0;
-    border: 2px solid var(--border2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
+  .spinner { width: 18px; height: 18px; flex-shrink: 0; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  .prog-wrap {
-    height: 6px; background: var(--border);
-    border-radius: 3px; overflow: hidden; margin-bottom: 14px;
-  }
-  .prog-fill {
-    height: 100%; background: var(--accent);
-    border-radius: 3px; width: 0%;
-    transition: width 0.35s ease;
-  }
-
-  /* ── Stats row ── */
-  .stats-row {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
-    margin-bottom: 16px; display: none;
-  }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
-  }
+  .prog-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-bottom: 14px; display: none; }
+  .prog-fill { height: 100%; background: var(--accent); border-radius: 3px; width: 0%; transition: width 0.35s ease; }
+  .stats-row { display: none; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; text-align: center; }
   .stat-card .val { font-size: 20px; font-weight: 600; }
   .stat-card .lbl { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .stat-done .val { color: var(--green); }
   .stat-skip .val { color: var(--accent); }
-  .stat-err .val  { color: var(--red); }
-
-  /* ── Page grid ── */
-  .page-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .page-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    overflow: hidden;
-    position: relative;
-  }
+  .stat-err .val { color: var(--red); }
+  .page-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-bottom: 16px; }
+  .page-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; position: relative; }
   .page-card canvas { width: 100%; display: block; }
-  .page-card .pg-status {
-    position: absolute; top: 4px; right: 4px;
-    font-size: 10px; font-weight: 600; padding: 2px 6px;
-    border-radius: 10px; letter-spacing: 0.02em;
-  }
+  .pg-status { position: absolute; top: 4px; right: 4px; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 10px; }
   .pg-status.queued  { background: #f0f0ee; color: var(--muted); }
   .pg-status.loading { background: #E6F1FB; color: var(--accent); }
   .pg-status.xlating { background: #FAEEDA; color: var(--amber); }
   .pg-status.resumed { background: #EAF3DE; color: var(--green); }
   .pg-status.done    { background: #EAF3DE; color: var(--green); }
   .pg-status.error   { background: var(--red-bg); color: var(--red); }
-  .page-card .pg-num {
-    font-size: 11px; color: var(--muted);
-    text-align: center; padding: 4px 0;
-    border-top: 1px solid var(--border);
-  }
-
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center;
-    gap: 8px; padding: 11px 20px;
-    border-radius: var(--radius-sm); font-size: 15px; font-weight: 500;
-    cursor: pointer; border: none; transition: background 0.15s, opacity 0.15s;
-  }
+  .page-card .pg-num { font-size: 11px; color: var(--muted); text-align: center; padding: 4px 0; border-top: 1px solid var(--border); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 500; cursor: pointer; border: none; transition: background 0.15s; width: 100%; }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary { background: var(--accent); color: white; width: 100%; }
+  .btn-primary { background: var(--accent); color: white; margin-bottom: 8px; }
   .btn-primary:hover:not(:disabled) { background: var(--accent-dk); }
-  .btn-danger { background: var(--red-bg); color: var(--red); margin-top: 8px; width: 100%; font-size: 13px; padding: 8px; }
+  .btn-danger { background: var(--red-bg); color: var(--red); font-size: 13px; padding: 8px; }
   .btn-danger:hover:not(:disabled) { background: #f7c1c1; }
-
   .dl-wrap { display: none; }
-
-  /* ── Error area ── */
-  .err-area {
-    display: none; background: var(--red-bg); border: 1px solid #f7c1c1;
-    border-radius: var(--radius-sm); padding: 10px 14px;
-    font-size: 13px; color: var(--red); margin-bottom: 12px;
-  }
-
-  /* ── Concurrency control ── */
-  .controls {
-    display: flex; align-items: center; gap: 10px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); padding: 10px 14px;
-    margin-bottom: 14px; font-size: 13px; color: var(--muted);
-    display: none;
-  }
+  .err-area { display: none; background: var(--red-bg); border: 1px solid #f7c1c1; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 12px; }
+  .controls { display: none; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--muted); }
   .controls label { flex: 1; }
   .controls input[type=range] { width: 100px; }
   .controls span { font-weight: 600; color: var(--text); min-width: 14px; text-align: right; }
-
-  @media (max-width: 480px) {
-    .stats-row { grid-template-columns: repeat(2, 1fr); }
-    .page-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
-  }
+  .storage-info { font-size: 11px; color: var(--muted); text-align: center; margin-top: 6px; }
+  @media (max-width: 480px) { .stats-row { grid-template-columns: repeat(2, 1fr); } .page-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); } }
 </style>
 </head>
 <body>
 <div class="app">
-
   <div class="header">
     <h1>♟ Chess PDF Translator</h1>
     <p>German → English · Images &amp; chess notation preserved · Progress auto-saved</p>
   </div>
 
-  <!-- Resume banner -->
   <div class="resume-banner" id="resume-banner">
     <strong id="resume-title">Unfinished session found</strong>
     <span id="resume-desc"></span>
@@ -225,7 +89,6 @@
     </div>
   </div>
 
-  <!-- Drop zone -->
   <div class="drop-zone" id="drop-zone">
     <input type="file" id="file-input" accept="application/pdf" />
     <div class="icon">📄</div>
@@ -234,14 +97,12 @@
     <span class="chess-pill">♟ Chess notation preserved automatically</span>
   </div>
 
-  <!-- Concurrency slider (shown during processing) -->
   <div class="controls" id="controls">
     <label for="conc-slider">Concurrent pages</label>
     <input type="range" id="conc-slider" min="1" max="5" value="2" step="1" />
     <span id="conc-val">2</span>
   </div>
 
-  <!-- Status -->
   <div class="status-wrap" id="status-wrap">
     <div class="status-bar">
       <div class="spinner" id="spinner"></div>
@@ -249,11 +110,10 @@
       <span class="counts" id="counts"></span>
     </div>
   </div>
-  <div class="prog-wrap" id="prog-wrap" style="display:none">
+  <div class="prog-wrap" id="prog-wrap">
     <div class="prog-fill" id="prog-fill"></div>
   </div>
 
-  <!-- Stats -->
   <div class="stats-row" id="stats-row">
     <div class="stat-card"><div class="val" id="s-total">0</div><div class="lbl">Total</div></div>
     <div class="stat-card stat-done"><div class="val" id="s-done">0</div><div class="lbl">Translated</div></div>
@@ -261,18 +121,14 @@
     <div class="stat-card stat-err"><div class="val" id="s-err">0</div><div class="lbl">Errors</div></div>
   </div>
 
-  <!-- Error area -->
   <div class="err-area" id="err-area"></div>
-
-  <!-- Page thumbnails -->
   <div class="page-grid" id="page-grid"></div>
 
-  <!-- Download -->
   <div class="dl-wrap" id="dl-wrap">
     <button class="btn btn-primary" id="dl-btn">⬇ Download translated PDF</button>
     <button class="btn btn-danger" id="clear-btn">🗑 Clear saved progress &amp; start over</button>
+    <div class="storage-info" id="storage-info"></div>
   </div>
-
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
@@ -283,136 +139,225 @@ const { jsPDF } = window.jspdf;
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-/* ── Constants ───────────────────────────────────────────────────────── */
-const DB_NAME    = 'chess_translator_v1';
-const DB_VERSION = 1;
-const STORE      = 'pages';
-const META_STORE = 'meta';
-const SCALE      = 1.8;
-const CHESS_RE   = /^(\d+\.{1,3}|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](=[QRBN])?[+#]?|O-O(-O)?|0-0(-0)?|1-0|0-1|½-½|1\/2-1\/2|\*|\d+\.\.\.)$/;
+const SCALE    = 1.8;
+const CHESS_RE = /^(\d+\.{1,3}|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](=[QRBN])?[+#]?|O-O(-O)?|0-0(-0)?|1-0|0-1|½-½|1\/2-1\/2|\*|\d+\.\.\.)$/;
 
-/* ── State ───────────────────────────────────────────────────────────── */
-let db            = null;
-let pdfDoc        = null;
-let totalPages    = 0;
-let sessionKey    = '';
-let translatedMap = {};   // pageNum → ImageData blob URL (finished pages)
-let stateDone     = 0;
-let stateSkip     = 0;
-let stateErr      = 0;
-let concurrency   = 2;
-let processing    = false;
+/* ══════════════════════════════════════════════════════════
+   STORAGE LAYER
+   Primary:   IndexedDB  (large blobs, no size limit)
+   Secondary: localStorage index  (fast metadata lookup)
+   Tertiary:  sessionStorage  (current-session fallback)
+   ══════════════════════════════════════════════════════════ */
 
-/* ── IndexedDB ───────────────────────────────────────────────────────── */
-function openDB() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains(STORE))
-        d.createObjectStore(STORE, { keyPath: 'id' });
-      if (!d.objectStoreNames.contains(META_STORE))
-        d.createObjectStore(META_STORE, { keyPath: 'key' });
-    };
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
+const IDB = (() => {
+  const DB_NAME = 'chess_xlator_v2';
+  const DB_VER  = 1;
+  let _db = null;
+
+  async function open() {
+    if (_db) return _db;
+    return new Promise((res, rej) => {
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if (!d.objectStoreNames.contains('pages'))
+          d.createObjectStore('pages', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('meta'))
+          d.createObjectStore('meta',  { keyPath: 'key' });
+      };
+      req.onsuccess = e => { _db = e.target.result; res(_db); };
+      req.onerror   = e => rej(e.target.error);
+    });
+  }
+
+  async function put(store, obj) {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).put(obj).onsuccess = () => res();
+      tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function get(store, key) {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readonly');
+      tx.objectStore(store).get(key).onsuccess = e => res(e.target.result || null);
+      tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function getAll(store) {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readonly');
+      tx.objectStore(store).getAll().onsuccess = e => res(e.target.result || []);
+      tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  async function del(store, key) {
+    const d = await open();
+    return new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key).onsuccess = () => res();
+      tx.onerror = e => rej(e.target.error);
+    });
+  }
+
+  return { put, get, getAll, del, open };
+})();
+
+/* localStorage index — tiny JSON, survives IDB wipe on Safari */
+const LS = {
+  KEY: 'chess_xlator_index',
+  load() {
+    try { return JSON.parse(localStorage.getItem(this.KEY) || '{}'); } catch { return {}; }
+  },
+  save(obj) {
+    try { localStorage.setItem(this.KEY, JSON.stringify(obj)); } catch {}
+  },
+  markPage(sessionKey, pageNum) {
+    const idx = this.load();
+    if (!idx[sessionKey]) idx[sessionKey] = { pages: [] };
+    if (!idx[sessionKey].pages.includes(pageNum))
+      idx[sessionKey].pages.push(pageNum);
+    idx[sessionKey].ts = Date.now();
+    this.save(idx);
+  },
+  getPages(sessionKey) {
+    const idx = this.load();
+    return idx[sessionKey]?.pages || [];
+  },
+  setMeta(sessionKey, meta) {
+    const idx = this.load();
+    if (!idx[sessionKey]) idx[sessionKey] = { pages: [] };
+    Object.assign(idx[sessionKey], meta);
+    this.save(idx);
+  },
+  getMeta(sessionKey) {
+    return this.load()[sessionKey] || null;
+  },
+  clear(sessionKey) {
+    const idx = this.load();
+    delete idx[sessionKey];
+    this.save(idx);
+  }
+};
+
+/* sessionStorage cache — fastest, current tab only */
+const SS = {
+  set(key, dataUrl) { try { sessionStorage.setItem('pg_' + key, dataUrl); } catch {} },
+  get(key) { return sessionStorage.getItem('pg_' + key); }
+};
+
+/* Unified save / load */
+async function savePage(sessionKey, pageNum, canvas) {
+  /* 1. Always update LS index immediately */
+  LS.markPage(sessionKey, pageNum);
+
+  /* 2. Save blob to IDB */
+  try {
+    const buf = await canvasToBuffer(canvas);
+    await IDB.put('pages', { id: `${sessionKey}:${pageNum}`, pageNum, buf });
+  } catch(e) {
+    console.warn('IDB save failed:', e);
+  }
+
+  /* 3. Cache data URL in sessionStorage for fast reload within same tab */
+  try {
+    const url = canvas.toDataURL('image/jpeg', 0.88);
+    SS.set(`${sessionKey}:${pageNum}`, url);
+  } catch(e) {}
+}
+
+function canvasToBuffer(canvas) {
+  return new Promise(res => {
+    canvas.toBlob(async blob => {
+      res(await blob.arrayBuffer());
+    }, 'image/jpeg', 0.88);
   });
 }
 
-function dbPut(store, obj) {
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(store, 'readwrite');
-    const req = tx.objectStore(store).put(obj);
-    req.onsuccess = () => res();
-    req.onerror   = e => rej(e.target.error);
-  });
+async function loadPage(sessionKey, pageNum) {
+  const key = `${sessionKey}:${pageNum}`;
+
+  /* 1. Try sessionStorage first (fastest) */
+  const cached = SS.get(key);
+  if (cached) return cached;
+
+  /* 2. Try IDB */
+  try {
+    const rec = await IDB.get('pages', key);
+    if (rec?.buf) {
+      const blob = new Blob([rec.buf], { type: 'image/jpeg' });
+      const url  = URL.createObjectURL(blob);
+      SS.set(key, url); /* warm the session cache */
+      return url;
+    }
+  } catch(e) {
+    console.warn('IDB load failed:', e);
+  }
+
+  return null;
 }
 
-function dbGet(store, key) {
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(store, 'readonly');
-    const req = tx.objectStore(store).get(key);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
-  });
+async function clearSession(sessionKey) {
+  LS.clear(sessionKey);
+  try {
+    const all  = await IDB.getAll('pages');
+    const mine = all.filter(r => r.id.startsWith(sessionKey + ':'));
+    for (const r of mine) await IDB.del('pages', r.id);
+    await IDB.del('meta', sessionKey);
+  } catch {}
 }
 
-function dbGetAll(store) {
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(store, 'readonly');
-    const req = tx.objectStore(store).getAll();
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
+/* ══════════════════════════════════════════════════════════
+   APP STATE
+   ══════════════════════════════════════════════════════════ */
+let pdfDoc     = null;
+let totalPages = 0;
+let sessionKey = '';
+let stateDone  = 0, stateSkip = 0, stateErr = 0;
+let concurrency = 2;
 
-function dbDelete(store, key) {
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(store, 'readwrite');
-    const req = tx.objectStore(store).delete(key);
-    req.onsuccess = () => res();
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-
-async function clearSession(key) {
-  const all = await dbGetAll(STORE);
-  const mine = all.filter(r => r.id.startsWith(key + ':'));
-  for (const r of mine) await dbDelete(STORE, r.id);
-  await dbDelete(META_STORE, key);
-}
-
-/* ── Session key from file ───────────────────────────────────────────── */
-function makeSessionKey(file) {
-  return `${file.name}_${file.size}`;
-}
-
-/* ── UI helpers ──────────────────────────────────────────────────────── */
-const $  = id => document.getElementById(id);
-const show = (id, val = 'block') => $(id).style.display = val;
+/* ══════════════════════════════════════════════════════════
+   UI HELPERS
+   ══════════════════════════════════════════════════════════ */
+const $    = id => document.getElementById(id);
+const show = (id, d = 'block') => $(id).style.display = d;
 const hide = id => $(id).style.display = 'none';
 
-function setStatus(txt, spinning = true) {
+function setStatus(txt, spin = true) {
   $('status-text').textContent = txt;
-  $('spinner').style.display = spinning ? 'block' : 'none';
+  $('spinner').style.display   = spin ? 'block' : 'none';
 }
-
 function setCounts(done, skip, err, total) {
-  $('counts').textContent = `${done + skip} / ${total}`;
-  $('s-total').textContent = total;
-  $('s-done').textContent  = done;
-  $('s-skip').textContent  = skip;
-  $('s-err').textContent   = err;
+  $('counts').textContent   = `${done + skip} / ${total}`;
+  $('s-total').textContent  = total;
+  $('s-done').textContent   = done;
+  $('s-skip').textContent   = skip;
+  $('s-err').textContent    = err;
 }
-
 function setProgress(n, total) {
   $('prog-fill').style.width = Math.round((n / total) * 100) + '%';
 }
-
 function showErr(msg) {
   $('err-area').textContent = msg;
   show('err-area');
 }
-
 function makeCard(num) {
   const card = document.createElement('div');
-  card.className = 'page-card';
-  card.id = `card-${num}`;
-  const cv  = document.createElement('canvas');
-  cv.id = `cv-${num}`;
+  card.className = 'page-card'; card.id = `card-${num}`;
+  const cv  = document.createElement('canvas'); cv.id = `cv-${num}`;
   const st  = document.createElement('div');
-  st.className = 'pg-status queued';
-  st.id = `st-${num}`;
-  st.textContent = 'queued';
+  st.className = 'pg-status queued'; st.id = `st-${num}`; st.textContent = 'queued';
   const lbl = document.createElement('div');
-  lbl.className = 'pg-num';
-  lbl.textContent = `p. ${num}`;
-  card.appendChild(cv);
-  card.appendChild(st);
-  card.appendChild(lbl);
+  lbl.className = 'pg-num'; lbl.textContent = `p. ${num}`;
+  card.appendChild(cv); card.appendChild(st); card.appendChild(lbl);
   return card;
 }
-
 function setCardStatus(num, cls, txt) {
   const st = $(`st-${num}`);
   if (!st) return;
@@ -420,26 +365,20 @@ function setCardStatus(num, cls, txt) {
   st.textContent = txt;
 }
 
-/* ── Chess detection ──────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   CHESS DETECTION
+   ══════════════════════════════════════════════════════════ */
 function isChessOnly(text) {
   if (!text || text.trim().length < 1) return true;
-  const tokens = text.trim().split(/\s+/);
-  return tokens.every(t => CHESS_RE.test(t));
+  return text.trim().split(/\s+/).every(t => CHESS_RE.test(t));
 }
 
-/* ── Translation ─────────────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   TRANSLATION
+   ══════════════════════════════════════════════════════════ */
 async function translateText(text) {
   if (!text || text.trim().length < 3) return text;
   if (isChessOnly(text)) return text;
-
-  const prompt =
-    `Translate this German chess magazine text to natural English.\n` +
-    `Rules:\n` +
-    `- Preserve chess notation EXACTLY (1.e4, Nf3, O-O, 0-0, +, #, etc.)\n` +
-    `- Preserve proper names, scores, dates, numbers as-is\n` +
-    `- Headlines: short and punchy. Body text: natural prose.\n` +
-    `- Return ONLY the translated text. No quotes. No explanation.\n\n` +
-    `Text: ${text}`;
 
   const resp = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -447,23 +386,32 @@ async function translateText(text) {
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
       max_tokens: 512,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{
+        role: 'user',
+        content:
+          `Translate this German chess magazine text to natural English.\n` +
+          `Rules:\n` +
+          `- Preserve chess notation EXACTLY (1.e4, Nf3, O-O, +, #, etc.)\n` +
+          `- Preserve names, scores, dates, numbers as-is\n` +
+          `- Headlines: short and punchy. Body: natural prose.\n` +
+          `- Return ONLY the translated text. No quotes. No explanation.\n\n` +
+          `Text: ${text}`
+      }]
     })
   });
-  if (!resp.ok) {
-    const err = await resp.text().catch(() => resp.status);
-    throw new Error(`API ${resp.status}: ${err}`);
-  }
+  if (!resp.ok) throw new Error(`API ${resp.status}`);
   const data = await resp.json();
   return data.content[0].text.trim();
 }
 
-/* ── OCR via PDF.js text layer ───────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   PAGE RENDERING + OVERLAY
+   ══════════════════════════════════════════════════════════ */
 async function getTextBlocks(page, viewport) {
   const content = await page.getTextContent({ normalizeWhitespace: false });
   const lineMap = {};
   for (const item of content.items) {
-    if (!item.str || !item.str.trim()) continue;
+    if (!item.str?.trim()) continue;
     const yKey = Math.round(item.transform[5] / 4) * 4;
     if (!lineMap[yKey]) lineMap[yKey] = [];
     lineMap[yKey].push(item);
@@ -476,29 +424,28 @@ async function getTextBlocks(page, viewport) {
     const items = lineMap[key].sort((a, b) => a.transform[4] - b.transform[4]);
     const text  = items.map(i => i.str).join(' ').trim();
     if (!text) continue;
-    const xs  = items.map(i => i.transform[4]);
-    const ys  = items.map(i => i.transform[5]);
-    const hs  = items.map(i => Math.abs(i.transform[3]) || 10);
-    const ws  = items.map(i => i.width || 0);
-    const x0  = Math.min(...xs)  * scaleX;
-    const y0  = (pdfH - Math.max(...ys) - Math.max(...hs)) * scaleY;
-    const x1  = (Math.max(...xs.map((x, i) => x + ws[i]))) * scaleX;
-    const avgH= (hs.reduce((a, b) => a + b, 0) / hs.length) * scaleY;
-    blocks.push({ text, x0, y0, x1, avgH, width: x1 - x0 });
+    const xs = items.map(i => i.transform[4]);
+    const ys = items.map(i => i.transform[5]);
+    const hs = items.map(i => Math.abs(i.transform[3]) || 10);
+    const ws = items.map(i => i.width || 0);
+    blocks.push({
+      text,
+      x0:    Math.min(...xs) * scaleX,
+      y0:    (pdfH - Math.max(...ys) - Math.max(...hs)) * scaleY,
+      width: (Math.max(...xs.map((x, i) => x + ws[i])) - Math.min(...xs)) * scaleX,
+      avgH:  (hs.reduce((a, b) => a + b, 0) / hs.length) * scaleY,
+    });
   }
   return blocks;
 }
 
-/* ── Overlay on canvas ───────────────────────────────────────────────── */
-function wrapText(ctx, text, maxWidth) {
+function wrapText(ctx, text, maxW) {
   const words = text.split(' ');
-  const lines = [];
-  let line = '';
+  const lines = []; let line = '';
   for (const w of words) {
     const test = line ? line + ' ' + w : w;
-    if (ctx.measureText(test).width > maxWidth && line) {
-      lines.push(line); line = w;
-    } else { line = test; }
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else line = test;
   }
   if (line) lines.push(line);
   return lines;
@@ -507,118 +454,103 @@ function wrapText(ctx, text, maxWidth) {
 async function renderPage(pageNum) {
   const page     = await pdfDoc.getPage(pageNum);
   const viewport = page.getViewport({ scale: SCALE });
-
-  const offscreen   = document.createElement('canvas');
-  offscreen.width   = viewport.width;
-  offscreen.height  = viewport.height;
-  const ctx = offscreen.getContext('2d');
+  const canvas   = document.createElement('canvas');
+  canvas.width   = viewport.width;
+  canvas.height  = viewport.height;
+  const ctx = canvas.getContext('2d');
   await page.render({ canvasContext: ctx, viewport }).promise;
 
-  const thumbCv = $(`cv-${pageNum}`);
-  if (thumbCv) {
-    thumbCv.width  = viewport.width;
-    thumbCv.height = viewport.height;
-    thumbCv.getContext('2d').drawImage(offscreen, 0, 0);
+  /* Show raw render in thumbnail immediately */
+  const thumb = $(`cv-${pageNum}`);
+  if (thumb) {
+    thumb.width  = viewport.width;
+    thumb.height = viewport.height;
+    thumb.getContext('2d').drawImage(canvas, 0, 0);
   }
 
   setCardStatus(pageNum, 'xlating', 'translating');
 
   const blocks = await getTextBlocks(page, viewport);
-
   for (const block of blocks) {
     let translated;
     try { translated = await translateText(block.text); }
-    catch(e) { translated = block.text; }
-
+    catch { translated = block.text; }
     if (!translated || translated === block.text) continue;
 
     const fontSize = Math.max(8, Math.min(Math.round(block.avgH * 0.82), 36));
     const isBold   = block.avgH > 16 * SCALE * 0.55;
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,0.93)';
-    const padY = fontSize * 0.15;
-    ctx.fillRect(block.x0 - 1, block.y0 - padY, block.width + 6, block.avgH + padY * 2 + 2);
+    ctx.fillRect(block.x0 - 1, block.y0 - 2, block.width + 6, block.avgH + 6);
     ctx.font = `${isBold ? '600' : '400'} ${fontSize}px serif`;
     ctx.fillStyle = '#111';
     ctx.textBaseline = 'top';
-    const lines = wrapText(ctx, translated, block.width + 4);
-    lines.forEach((ln, i) => ctx.fillText(ln, block.x0, block.y0 + i * (fontSize * 1.22)));
+    wrapText(ctx, translated, block.width + 4)
+      .forEach((ln, i) => ctx.fillText(ln, block.x0, block.y0 + i * (fontSize * 1.22)));
     ctx.restore();
 
-    if (thumbCv) thumbCv.getContext('2d').drawImage(offscreen, 0, 0);
+    if (thumb) thumb.getContext('2d').drawImage(canvas, 0, 0);
   }
 
-  return offscreen;
+  return canvas;
 }
 
-/* ── Save page to IndexedDB ──────────────────────────────────────────── */
-async function savePage(pageNum, canvas) {
-  return new Promise(res => {
-    canvas.toBlob(async blob => {
-      const buf = await blob.arrayBuffer();
-      await dbPut(STORE, { id: `${sessionKey}:${pageNum}`, pageNum, buf });
-      res();
-    }, 'image/jpeg', 0.88);
-  });
-}
-
-/* ── Load page blob from IndexedDB → canvas ──────────────────────────── */
-async function loadSavedPage(pageNum) {
-  const rec = await dbGet(STORE, `${sessionKey}:${pageNum}`);
-  if (!rec) return null;
-  const blob = new Blob([rec.buf], { type: 'image/jpeg' });
-  return URL.createObjectURL(blob);
-}
-
-/* ── Main processing pipeline ────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   MAIN PIPELINE
+   ══════════════════════════════════════════════════════════ */
 async function processPages(startFresh) {
-  processing = true;
   show('status-wrap');
   show('prog-wrap');
   show('stats-row', 'grid');
   show('controls', 'flex');
 
-  const queue = [];
-  for (let i = 1; i <= totalPages; i++) queue.push(i);
+  const allUrls = new Array(totalPages + 1).fill(null);
+  const queue   = [];
 
-  const allCanvases = new Array(totalPages + 1).fill(null);
-
-  /* Load already-completed pages first */
+  /* ── Restore saved pages ── */
   if (!startFresh) {
     setStatus('Loading saved progress…');
-    for (const num of [...queue]) {
-      const url = await loadSavedPage(num);
-      if (url) {
-        allCanvases[num] = url;
-        const thumbCv = $(`cv-${num}`);
-        if (thumbCv) {
-          const img = new Image();
-          await new Promise(r => { img.onload = r; img.src = url; });
-          thumbCv.width  = img.naturalWidth;
-          thumbCv.height = img.naturalHeight;
-          thumbCv.getContext('2d').drawImage(img, 0, 0);
+    const savedNums = LS.getPages(sessionKey);
+
+    for (const num of savedNums) {
+      if (num < 1 || num > totalPages) continue;
+      const url = await loadPage(sessionKey, num);
+      if (!url) continue;
+      allUrls[num] = url;
+      const thumb = $(`cv-${num}`);
+      if (thumb) {
+        const img = new Image();
+        await new Promise(r => { img.onload = r; img.onerror = r; img.src = url; });
+        if (img.naturalWidth) {
+          thumb.width  = img.naturalWidth;
+          thumb.height = img.naturalHeight;
+          thumb.getContext('2d').drawImage(img, 0, 0);
         }
-        setCardStatus(num, 'resumed', 'resumed');
-        stateSkip++;
-        queue.splice(queue.indexOf(num), 1);
       }
+      setCardStatus(num, 'resumed', 'resumed');
+      stateSkip++;
     }
-    setCounts(stateDone, stateSkip, stateErr, totalPages);
-    setProgress(stateSkip, totalPages);
+    const savedSet = new Set(savedNums);
+    for (let i = 1; i <= totalPages; i++)
+      if (!savedSet.has(i)) queue.push(i);
+  } else {
+    for (let i = 1; i <= totalPages; i++) queue.push(i);
   }
 
+  setCounts(stateDone, stateSkip, stateErr, totalPages);
+  setProgress(stateSkip, totalPages);
   setStatus(`Translating ${queue.length} remaining pages…`);
 
-  /* Worker function */
+  /* ── Worker ── */
   async function worker() {
     while (queue.length > 0) {
       const num = queue.shift();
       setCardStatus(num, 'loading', 'loading');
       try {
         const canvas = await renderPage(num);
-        await savePage(num, canvas);
+        await savePage(sessionKey, num, canvas);
         const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.88));
-        allCanvases[num] = URL.createObjectURL(blob);
+        allUrls[num] = URL.createObjectURL(blob);
         setCardStatus(num, 'done', 'done');
         stateDone++;
       } catch(e) {
@@ -633,159 +565,146 @@ async function processPages(startFresh) {
     }
   }
 
-  /* Spin up concurrent workers */
-  const workers = Array.from({ length: concurrency }, worker);
-  await Promise.all(workers);
+  await Promise.all(Array.from({ length: concurrency }, worker));
 
-  /* Save session meta */
-  await dbPut(META_STORE, {
-    key: sessionKey, totalPages,
-    done: stateDone + stateSkip,
-    complete: true,
-    ts: Date.now()
-  });
+  LS.setMeta(sessionKey, { totalPages, complete: true, ts: Date.now() });
 
-  processing = false;
-  setStatus(`All ${totalPages} pages translated!`, false);
+  setStatus(`All ${totalPages} pages translated! ✓`, false);
   show('dl-wrap');
-  $('dl-btn').onclick = () => downloadPDF(allCanvases);
+  $('dl-btn').onclick = () => downloadPDF(allUrls);
+
+  const savedCount = LS.getPages(sessionKey).length;
+  $('storage-info').textContent =
+    `${savedCount} pages saved in browser storage · Safe to close and resume later`;
 }
 
-/* ── Download PDF ─────────────────────────────────────────────────────── */
-async function downloadPDF(canvases) {
+/* ══════════════════════════════════════════════════════════
+   DOWNLOAD
+   ══════════════════════════════════════════════════════════ */
+async function downloadPDF(urls) {
   $('dl-btn').disabled = true;
   setStatus('Building PDF…');
+  const pages = urls.map((u, i) => ({ u, i })).filter(x => x.u && x.i > 0);
 
-  const validPages = canvases
-    .map((url, i) => ({ url, i }))
-    .filter(x => x.url && x.i > 0);
-
-  const first = validPages[0];
-  const img0  = new Image();
-  await new Promise(r => { img0.onload = r; img0.src = first.url; });
+  const img0 = new Image();
+  await new Promise(r => { img0.onload = r; img0.src = pages[0].u; });
   const w0 = img0.naturalWidth, h0 = img0.naturalHeight;
 
   const pdf = new jsPDF({
     orientation: w0 > h0 ? 'l' : 'p',
-    unit: 'px',
-    format: [w0, h0],
-    compress: true
+    unit: 'px', format: [w0, h0], compress: true
   });
 
-  for (let idx = 0; idx < validPages.length; idx++) {
-    const { url, i } = validPages[idx];
-    const img = new Image();
-    await new Promise(r => { img.onload = r; img.src = url; });
+  for (let idx = 0; idx < pages.length; idx++) {
+    const { u } = pages[idx];
+    const img   = new Image();
+    await new Promise(r => { img.onload = r; img.src = u; });
     const w = img.naturalWidth, h = img.naturalHeight;
     if (idx > 0) pdf.addPage([w, h], w > h ? 'l' : 'p');
-    pdf.addImage(url, 'JPEG', 0, 0, w, h);
-    setStatus(`Building PDF… (${idx + 1}/${validPages.length})`, true);
+    pdf.addImage(u, 'JPEG', 0, 0, w, h);
+    setStatus(`Building PDF… (${idx + 1}/${pages.length})`, true);
   }
 
   pdf.save('Rochade_Europa_EN_Translated.pdf');
-  setStatus('Download started!', false);
+  setStatus('Download started! ✓', false);
   $('dl-btn').disabled = false;
 }
 
-/* ── Entry point ─────────────────────────────────────────────────────── */
-async function startProcessing(file, startFresh = true) {
+/* ══════════════════════════════════════════════════════════
+   SESSION CHECK + ENTRY
+   ══════════════════════════════════════════════════════════ */
+function makeSessionKey(file) {
+  return `${file.name.replace(/[^a-zA-Z0-9]/g, '_')}_${file.size}`;
+}
+
+async function checkExistingSession(file) {
+  const key  = makeSessionKey(file);
+  const meta = LS.getMeta(key);
+  if (!meta || !meta.pages?.length) return false;
+
+  /* Verify at least some blobs are actually in IDB */
+  const samplePage = meta.pages[0];
+  const exists = await loadPage(key, samplePage);
+  if (!exists) {
+    /* LS index exists but IDB was wiped — clean up stale index */
+    LS.clear(key);
+    return false;
+  }
+
+  sessionKey = key;
+  const count = meta.pages.length;
+  $('resume-title').textContent = `Unfinished session found for "${file.name}"`;
+  $('resume-desc').textContent  =
+    `${count} of ${meta.totalPages || '?'} pages already translated and saved locally. ` +
+    `Resume to skip these pages and continue from where you left off.`;
+  $('resume-banner').style.display = 'block';
+  hide('drop-zone');
+
+  return new Promise(res => {
+    $('btn-resume').onclick  = () => res({ resume: true,  file });
+    $('btn-discard').onclick = async () => {
+      await clearSession(key);
+      $('resume-banner').style.display = 'none';
+      show('drop-zone');
+      res(false);
+    };
+  });
+}
+
+async function startProcessing(file, startFresh) {
   hide('drop-zone');
   hide('resume-banner');
   hide('err-area');
-
   stateDone = 0; stateSkip = 0; stateErr = 0;
 
   const grid = $('page-grid');
   grid.innerHTML = '';
 
-  const arrayBuffer = await file.arrayBuffer();
-  pdfDoc      = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const buf   = await file.arrayBuffer();
+  pdfDoc      = await pdfjsLib.getDocument({ data: buf }).promise;
   totalPages  = pdfDoc.numPages;
   sessionKey  = makeSessionKey(file);
 
-  $('s-total').textContent = totalPages;
   setCounts(0, 0, 0, totalPages);
-
-  for (let i = 1; i <= totalPages; i++) {
-    grid.appendChild(makeCard(i));
-  }
+  for (let i = 1; i <= totalPages; i++) grid.appendChild(makeCard(i));
 
   await processPages(startFresh);
 }
 
-/* ── Check for existing session on load ──────────────────────────────── */
-async function checkExistingSession(file) {
-  const key  = makeSessionKey(file);
-  const meta = await dbGet(META_STORE, key);
-  if (!meta) return false;
-  const saved = await dbGetAll(STORE);
-  const mine  = saved.filter(r => r.id.startsWith(key + ':')).length;
-  if (mine === 0) return false;
-
-  sessionKey = key;
-  const banner = $('resume-banner');
-  $('resume-title').textContent = `Unfinished session found for "${file.name}"`;
-  $('resume-desc').textContent  =
-    `${mine} of ${meta.totalPages || '?'} pages already translated and saved. ` +
-    `Resume to skip these and continue from where you left off.`;
-  banner.style.display = 'block';
-  hide('drop-zone');
-
-  return new Promise(res => {
-    $('btn-resume').onclick = () => res({ resume: true,  file });
-    $('btn-discard').onclick = async () => {
-      await clearSession(key);
-      res({ resume: false, file });
-    };
-  });
-}
-
-/* ── File handling ────────────────────────────────────────────────────── */
 async function handleFile(file) {
-  if (!file || file.type !== 'application/pdf') {
-    showErr('Please select a PDF file.'); return;
-  }
+  if (!file || file.type !== 'application/pdf') { showErr('Please select a PDF file.'); return; }
   const result = await checkExistingSession(file);
-  if (result) {
-    await startProcessing(result.file, !result.resume);
-  } else {
-    await startProcessing(file, true);
-  }
+  if (result)       await startProcessing(result.file, false);
+  else if (result === false && !$('drop-zone').style.display.includes('none'))
+    return; /* user hit discard, drop zone is back */
+  else              await startProcessing(file, true);
 }
 
-/* ── Concurrency slider ───────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   EVENT LISTENERS
+   ══════════════════════════════════════════════════════════ */
 $('conc-slider').addEventListener('input', e => {
   concurrency = parseInt(e.target.value);
   $('conc-val').textContent = concurrency;
 });
-
-/* ── Event listeners ──────────────────────────────────────────────────── */
-const dropZone  = $('drop-zone');
-const fileInput = $('file-input');
-
-dropZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', e => {
-  if (e.target.files[0]) handleFile(e.target.files[0]);
-});
-dropZone.addEventListener('dragover', e => {
-  e.preventDefault(); dropZone.classList.add('drag-over');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault(); dropZone.classList.remove('drag-over');
-  handleFile(e.dataTransfer.files[0]);
-});
-
 $('clear-btn').addEventListener('click', async () => {
   if (!confirm('Clear all saved progress and start over?')) return;
   await clearSession(sessionKey);
   location.reload();
 });
+const dz = $('drop-zone');
+const fi = $('file-input');
+dz.addEventListener('click',     () => fi.click());
+fi.addEventListener('change',    e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
 
-/* ── Init ─────────────────────────────────────────────────────────────── */
-(async () => {
-  db = await openDB();
-})();
+/* Init IDB eagerly */
+IDB.open().catch(console.warn);
 </script>
 </body>
 </html>
