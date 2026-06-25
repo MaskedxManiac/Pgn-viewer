@@ -56,6 +56,7 @@
   .game-item:active{background:rgba(255,255,255,.05);}
   .game-item.selected{background:rgba(233,69,96,.1);}
   .game-item.resume{background:rgba(233,69,96,.05);border-left:3px solid var(--accent);}
+  .resume-badge{font-size:10px;font-weight:700;color:var(--accent);background:rgba(233,69,96,.15);border-radius:4px;padding:2px 6px;margin-left:6px;white-space:nowrap;}
   .game-num{font-size:11px;color:var(--muted);min-width:26px;text-align:right;flex-shrink:0;}
   .game-item-info{flex:1;min-width:0;}
   .game-players{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -1033,6 +1034,7 @@ function renderGameList(){
     const el=document.createElement('div');
     const isResume=state._resumeIdx===i&&i!==currentDbIdx;
     el.className='game-item'+(i===currentDbIdx?' selected':isResume?' resume':'');
+    const resumeBadge=isResume?'<span class="resume-badge">↩ last opened</span>':''
     const w=(h['White']||'').replace(/\r/g,'').trim(),s=(h['Site']||'').replace(/\r/g,'').trim();
     const isChapter=w&&s&&w===s;
     if(isChapter){
@@ -1104,9 +1106,9 @@ function loadPGNText(text,filename){
     document.getElementById('db-title').textContent=filename||'Database';
     const lastIdx=filename?loadLastGame(filename):NaN;
     const resumeIdx=!isNaN(lastIdx)&&lastIdx>=0&&lastIdx<parsed.length?lastIdx:-1;
-    document.getElementById('db-count').textContent=parsed.length+' games'+(resumeIdx>=0?' · resuming game '+(resumeIdx+1):'');
+    document.getElementById('db-count').textContent=parsed.length+' games'+(resumeIdx>=0?' · last opened: #'+(resumeIdx+1):'');
+    state._resumeIdx=resumeIdx;
     document.getElementById('search-input').value='';renderGameList();
-    if(resumeIdx>=0)setTimeout(()=>{openGameByDbIndex(resumeIdx);state._resumeIdx=resumeIdx;},300);
   }
 }
 
