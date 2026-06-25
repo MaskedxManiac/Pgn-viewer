@@ -50,7 +50,7 @@
   .search-bar input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;}
   .search-bar input::placeholder{color:var(--muted);}
   .search-icon{color:var(--muted);font-size:14px;}
-  .game-list-scroll{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  /* game-list-scroll styling moved to game-list-outer */
   .game-item{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:10px;}
   .game-item:last-child{border-bottom:none;}
   .game-item:active{background:rgba(255,255,255,.05);}
@@ -62,10 +62,13 @@
   .game-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .game-result-badge{font-size:11px;font-weight:700;color:var(--accent);background:rgba(233,69,96,.12);border-radius:5px;padding:2px 7px;flex-shrink:0;}
   .no-results{text-align:center;color:var(--muted);font-size:13px;padding:24px;}
-  .game-jump-row{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:10px;}
-  .game-jump-label{font-size:11px;color:var(--muted);white-space:nowrap;}
-  .game-jump-row input[type=range]{flex:1;accent-color:var(--accent);min-width:0;}
-  .game-jump-val{font-size:12px;font-weight:600;color:var(--text);min-width:36px;text-align:right;}
+  .game-list-outer{position:relative;display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel);}
+  .game-list-scroll{flex:1;overflow-y:auto;max-height:60vh;scrollbar-width:none;}
+  .game-list-scroll::-webkit-scrollbar{display:none;}
+  .game-vslider-track{width:18px;flex-shrink:0;background:rgba(255,255,255,0.04);border-left:1px solid var(--border);position:relative;cursor:pointer;touch-action:none;}
+  .game-vslider-thumb{position:absolute;left:2px;right:2px;min-height:24px;background:var(--accent);border-radius:4px;opacity:0.7;transition:opacity .15s;cursor:grab;}
+  .game-vslider-thumb:active{opacity:1;cursor:grabbing;}
+
   #viewer{display:none;}
   .game-info{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
   .game-info .players{display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -194,12 +197,12 @@
       <span class="search-icon">🔍</span>
       <input type="text" id="search-input" placeholder="Search player, event, opening…" oninput="renderGameList()">
     </div>
-    <div class="game-jump-row" id="game-jump-row">
-      <span class="game-jump-label">Game</span>
-      <input type="range" id="game-jump-slider" min="1" value="1" step="1" oninput="onGameSlider()">
-      <span class="game-jump-val" id="game-jump-val">1</span>
+    <div class="game-list-outer">
+      <div class="game-list-scroll" id="game-list-scroll-wrap"><div class="game-list" id="game-list"></div></div>
+      <div class="game-vslider-track" id="game-vslider-track">
+        <div class="game-vslider-thumb" id="game-vslider-thumb"></div>
+      </div>
     </div>
-    <div class="game-list-scroll"><div class="game-list" id="game-list"></div></div>
   </div>
 
   <div id="viewer">
@@ -1045,27 +1048,10 @@ function renderGameList(){
     list.appendChild(el);
   }
   if(filteredIndices.length>200){const more=document.createElement('div');more.className='no-results';more.textContent=`Showing 200 of ${filteredIndices.length} — use search to filter`;list.appendChild(more);}
-  // Update jump slider range
-  const slider=document.getElementById('game-jump-slider');
-  const jumpRow=document.getElementById('game-jump-row');
-  if(filteredIndices.length>1){
-    slider.max=filteredIndices.length;
-    slider.value=currentDbIdx>=0?(filteredIndices.indexOf(currentDbIdx)+1)||1:1;
-    document.getElementById('game-jump-val').textContent=slider.value+' / '+filteredIndices.length;
-    jumpRow.style.display='flex';
-  } else {
-    jumpRow.style.display='none';
-  }
+  setTimeout(()=>{const s=document.getElementById('game-list-scroll-wrap');if(s)s.scrollTop=0;initVSlider();},50);
 }
 
-function onGameSlider(){
-  const slider=document.getElementById('game-jump-slider');
-  const idx=parseInt(slider.value)-1;
-  document.getElementById('game-jump-val').textContent=slider.value+' / '+filteredIndices.length;
-  if(filteredIndices[idx]!==undefined){
-    openGameByDbIndex(filteredIndices[idx]);
-  }
-}
+// onGameSlider replaced by vertical slider
 
 function saveLastGame(fn,idx){try{localStorage.setItem('pgn_last_'+fn,idx);}catch(e){}}
 function loadLastGame(fn){try{return parseInt(localStorage.getItem('pgn_last_'+fn));}catch(e){return NaN;}}
@@ -1161,6 +1147,69 @@ dz.addEventListener('drop',e=>{
   const file=e.dataTransfer.files[0];
   if(file){const r=new FileReader();r.onload=ev=>loadPGNText(ev.target.result,file.name);r.readAsText(file);}
 });
+
+// ── Vertical game list slider ─────────────────────────────────────────────────
+function initVSlider(){
+  const track=document.getElementById('game-vslider-track');
+  const thumb=document.getElementById('game-vslider-thumb');
+  const scroll=document.getElementById('game-list-scroll-wrap');
+  if(!track||!thumb||!scroll)return;
+
+  function updateThumb(){
+    const scrollable=scroll.scrollHeight-scroll.clientHeight;
+    if(scrollable<=0){thumb.style.display='none';return;}
+    thumb.style.display='block';
+    const trackH=track.clientHeight;
+    const ratio=scroll.clientHeight/scroll.scrollHeight;
+    const thumbH=Math.max(24,trackH*ratio);
+    const thumbTop=(scroll.scrollTop/scrollable)*(trackH-thumbH);
+    thumb.style.height=thumbH+'px';
+    thumb.style.top=thumbTop+'px';
+  }
+
+  scroll.addEventListener('scroll',updateThumb,{passive:true});
+
+  // Drag logic
+  let dragging=false,startY=0,startScrollTop=0;
+  function onDragStart(e){
+    dragging=true;
+    startY=e.touches?e.touches[0].clientY:e.clientY;
+    startScrollTop=scroll.scrollTop;
+    e.preventDefault();
+  }
+  function onDragMove(e){
+    if(!dragging)return;
+    const y=e.touches?e.touches[0].clientY:e.clientY;
+    const dy=y-startY;
+    const trackH=track.clientHeight;
+    const thumbH=thumb.clientHeight;
+    const scrollable=scroll.scrollHeight-scroll.clientHeight;
+    const ratio=dy/(trackH-thumbH);
+    scroll.scrollTop=startScrollTop+ratio*scrollable;
+    e.preventDefault();
+  }
+  function onDragEnd(){dragging=false;}
+
+  thumb.addEventListener('mousedown',onDragStart);
+  thumb.addEventListener('touchstart',onDragStart,{passive:false});
+  document.addEventListener('mousemove',onDragMove);
+  document.addEventListener('touchmove',onDragMove,{passive:false});
+  document.addEventListener('mouseup',onDragEnd);
+  document.addEventListener('touchend',onDragEnd);
+
+  // Click on track to jump
+  track.addEventListener('click',e=>{
+    if(e.target===thumb)return;
+    const rect=track.getBoundingClientRect();
+    const y=e.clientY-rect.top;
+    const ratio=y/track.clientHeight;
+    scroll.scrollTop=ratio*(scroll.scrollHeight-scroll.clientHeight);
+  });
+
+  updateThumb();
+  // Re-run after list renders
+  setTimeout(updateThumb,400);
+}
 
 // ── Autoplay ──────────────────────────────────────────────────────────────────
 let autoplayTimer=null, autoplaySpeed=1000;
