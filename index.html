@@ -1039,11 +1039,11 @@ function renderGameList(){
     const isChapter=w&&s&&w===s;
     if(isChapter){
       const chapter=h['Site']||h['White']||'Chapter '+(i+1),rawB=(h['Black']||'').trim(),section=(rawB&&rawB!==h['Site']&&rawB!==h['White'])?rawB:'';
-      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">${chapter}</div>${section?`<div class="game-detail">${section}</div>`:''}</div>${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
+      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">${chapter}${resumeBadge||''}</div>${section?`<div class="game-detail">${section}</div>`:''}</div>${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
     }else{
       const white=h['White']||'?',black=h['Black']||'?',we=h['WhiteElo']?` (${h['WhiteElo']})`:'',be=h['BlackElo']?` (${h['BlackElo']})`:'',date=h['Date']?h['Date'].replace(/\.\?\?/g,'').replace(/\./g,'-'):'',eco=h['ECO']||'',opening=h['Opening']||'',event=h['Event']||'';
       const detail=[event,eco&&opening?`${eco} ${opening}`:opening||eco,date].filter(Boolean).join(' · ');
-      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">♔ ${white}${we} vs ${black}${be} ♚</div>${detail?`<div class="game-detail">${detail}</div>`:''}</div>${result?`<span class="game-result-badge">${result}</span>`:''}`;
+      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">♔ ${white}${we} vs ${black}${be} ♚${resumeBadge||''}</div>${detail?`<div class="game-detail">${detail}</div>`:''}</div>${result?`<span class="game-result-badge">${result}</span>`:''}`;
     }
     el.addEventListener('click',()=>openGameByDbIndex(i));
     el.addEventListener('touchend',e=>{e.preventDefault();openGameByDbIndex(i);});
