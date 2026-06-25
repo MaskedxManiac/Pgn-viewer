@@ -65,8 +65,8 @@
   .game-list-outer{position:relative;display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--panel);}
   .game-list-scroll{flex:1;overflow-y:auto;max-height:60vh;scrollbar-width:none;}
   .game-list-scroll::-webkit-scrollbar{display:none;}
-  .game-vslider-track{width:18px;flex-shrink:0;background:rgba(255,255,255,0.04);border-left:1px solid var(--border);position:relative;cursor:pointer;touch-action:none;}
-  .game-vslider-thumb{position:absolute;left:2px;right:2px;min-height:24px;background:var(--accent);border-radius:4px;opacity:0.7;transition:opacity .15s;cursor:grab;}
+  .game-vslider-track{width:22px;flex-shrink:0;background:rgba(255,255,255,0.06);border-left:1px solid var(--border);position:relative;cursor:pointer;touch-action:none;user-select:none;}
+  .game-vslider-thumb{position:absolute;left:2px;right:2px;min-height:32px;background:var(--accent);border-radius:5px;opacity:0.85;transition:top .05s;cursor:grab;}
   .game-vslider-thumb:active{opacity:1;cursor:grabbing;}
 
   #viewer{display:none;}
@@ -1148,68 +1148,81 @@ dz.addEventListener('drop',e=>{
   if(file){const r=new FileReader();r.onload=ev=>loadPGNText(ev.target.result,file.name);r.readAsText(file);}
 });
 
-// ── Vertical game list slider ─────────────────────────────────────────────────
+// ── Vertical game list slider — jumps directly to game ────────────────────────
+let vsliderDragging=false;
+
 function initVSlider(){
   const track=document.getElementById('game-vslider-track');
   const thumb=document.getElementById('game-vslider-thumb');
-  const scroll=document.getElementById('game-list-scroll-wrap');
-  if(!track||!thumb||!scroll)return;
+  if(!track||!thumb)return;
+  const total=filteredIndices.length;
+  if(total<=1){thumb.style.display='none';return;}
 
-  function updateThumb(){
-    const scrollable=scroll.scrollHeight-scroll.clientHeight;
-    if(scrollable<=0){thumb.style.display='none';return;}
-    thumb.style.display='block';
-    const trackH=track.clientHeight;
-    const ratio=scroll.clientHeight/scroll.scrollHeight;
-    const thumbH=Math.max(24,trackH*ratio);
-    const thumbTop=(scroll.scrollTop/scrollable)*(trackH-thumbH);
-    thumb.style.height=thumbH+'px';
-    thumb.style.top=thumbTop+'px';
-  }
+  // Thumb height: at least 24px, proportional to visible fraction
+  const trackH=track.clientHeight;
+  const thumbH=Math.max(24,Math.min(60,trackH/total*10));
+  thumb.style.height=thumbH+'px';
+  thumb.style.display='block';
+  syncThumb();
 
-  scroll.addEventListener('scroll',updateThumb,{passive:true});
-
-  // Drag logic
-  let dragging=false,startY=0,startScrollTop=0;
-  function onDragStart(e){
-    dragging=true;
-    startY=e.touches?e.touches[0].clientY:e.clientY;
-    startScrollTop=scroll.scrollTop;
-    e.preventDefault();
-  }
-  function onDragMove(e){
-    if(!dragging)return;
-    const y=e.touches?e.touches[0].clientY:e.clientY;
-    const dy=y-startY;
+  function syncThumb(){
     const trackH=track.clientHeight;
     const thumbH=thumb.clientHeight;
-    const scrollable=scroll.scrollHeight-scroll.clientHeight;
-    const ratio=dy/(trackH-thumbH);
-    scroll.scrollTop=startScrollTop+ratio*scrollable;
+    const fi=filteredIndices.indexOf(currentDbIdx);
+    const pos=fi<0?0:fi/(total-1);
+    thumb.style.top=Math.round(pos*(trackH-thumbH))+'px';
+  }
+
+  function gameFromY(clientY){
+    const rect=track.getBoundingClientRect();
+    const y=Math.max(0,Math.min(clientY-rect.top,rect.height));
+    const ratio=y/rect.height;
+    const idx=Math.round(ratio*(total-1));
+    return Math.max(0,Math.min(idx,total-1));
+  }
+
+  let lastOpened=-1;
+  function openFromY(clientY){
+    const idx=gameFromY(clientY);
+    if(filteredIndices[idx]!==undefined&&filteredIndices[idx]!==lastOpened){
+      lastOpened=filteredIndices[idx];
+      // Update thumb position immediately for responsiveness
+      const trackH=track.clientHeight;
+      const thumbH=thumb.clientHeight;
+      const ratio=idx/(total-1);
+      thumb.style.top=Math.round(ratio*(trackH-thumbH))+'px';
+      openGameByDbIndex(filteredIndices[idx]);
+    }
+  }
+
+  function onStart(e){
+    vsliderDragging=true;
+    openFromY(e.touches?e.touches[0].clientY:e.clientY);
     e.preventDefault();
   }
-  function onDragEnd(){dragging=false;}
+  function onMove(e){
+    if(!vsliderDragging)return;
+    openFromY(e.touches?e.touches[0].clientY:e.clientY);
+    e.preventDefault();
+  }
+  function onEnd(){vsliderDragging=false;lastOpened=-1;}
 
-  thumb.addEventListener('mousedown',onDragStart);
-  thumb.addEventListener('touchstart',onDragStart,{passive:false});
-  document.addEventListener('mousemove',onDragMove);
-  document.addEventListener('touchmove',onDragMove,{passive:false});
-  document.addEventListener('mouseup',onDragEnd);
-  document.addEventListener('touchend',onDragEnd);
+  // Remove old listeners by cloning
+  const newTrack=track.cloneNode(true);
+  track.parentNode.replaceChild(newTrack,track);
+  const newThumb=newTrack.querySelector('.game-vslider-thumb');
 
-  // Click on track to jump
-  track.addEventListener('click',e=>{
-    if(e.target===thumb)return;
-    const rect=track.getBoundingClientRect();
-    const y=e.clientY-rect.top;
-    const ratio=y/track.clientHeight;
-    scroll.scrollTop=ratio*(scroll.scrollHeight-scroll.clientHeight);
-  });
+  newTrack.addEventListener('touchstart',onStart,{passive:false});
+  newTrack.addEventListener('touchmove',onMove,{passive:false});
+  newTrack.addEventListener('touchend',onEnd,{passive:true});
+  newTrack.addEventListener('mousedown',onStart);
+  document.addEventListener('mousemove',onMove);
+  document.addEventListener('mouseup',onEnd);
 
-  updateThumb();
-  // Re-run after list renders
-  setTimeout(updateThumb,400);
+  // Sync thumb when game changes
+  window._syncVThumb=syncThumb;
 }
+
 
 // ── Autoplay ──────────────────────────────────────────────────────────────────
 let autoplayTimer=null, autoplaySpeed=1000;
