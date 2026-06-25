@@ -1171,8 +1171,9 @@ function initVSlider(){
 
   scroll.addEventListener('scroll',updateThumb,{passive:true});
 
-  // Drag logic
+  // Drag logic — all listeners scoped to track only, no global document listeners
   let dragging=false,startY=0,startScrollTop=0;
+
   function onDragStart(e){
     dragging=true;
     startY=e.touches?e.touches[0].clientY:e.clientY;
@@ -1187,19 +1188,21 @@ function initVSlider(){
     const thumbH=thumb.clientHeight;
     const scrollable=scroll.scrollHeight-scroll.clientHeight;
     const ratio=dy/(trackH-thumbH);
-    scroll.scrollTop=startScrollTop+ratio*scrollable;
+    scroll.scrollTop=Math.max(0,Math.min(startScrollTop+ratio*scrollable,scrollable));
     e.preventDefault();
   }
   function onDragEnd(){dragging=false;}
 
-  thumb.addEventListener('mousedown',onDragStart);
-  thumb.addEventListener('touchstart',onDragStart,{passive:false});
-  document.addEventListener('mousemove',onDragMove);
-  document.addEventListener('touchmove',onDragMove,{passive:false});
-  document.addEventListener('mouseup',onDragEnd);
-  document.addEventListener('touchend',onDragEnd);
+  // All on track — no global document listeners
+  track.addEventListener('touchstart',onDragStart,{passive:false});
+  track.addEventListener('touchmove',onDragMove,{passive:false});
+  track.addEventListener('touchend',onDragEnd,{passive:true});
+  track.addEventListener('mousedown',onDragStart);
+  track.addEventListener('mousemove',onDragMove);
+  track.addEventListener('mouseup',onDragEnd);
+  track.addEventListener('mouseleave',onDragEnd);
 
-  // Click on track to jump
+  // Tap on track to jump
   track.addEventListener('click',e=>{
     if(e.target===thumb)return;
     const rect=track.getBoundingClientRect();
@@ -1209,7 +1212,6 @@ function initVSlider(){
   });
 
   updateThumb();
-  // Re-run after list renders
   setTimeout(updateThumb,400);
 }
 
