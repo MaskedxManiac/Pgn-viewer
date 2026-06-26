@@ -50,24 +50,22 @@
   .search-bar input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;}
   .search-bar input::placeholder{color:var(--muted);}
   .search-icon{color:var(--muted);font-size:14px;}
-  /* game-list-scroll styling moved to game-list-outer */
+  .game-list-scroll{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
   .game-item{padding:11px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;display:flex;align-items:center;gap:10px;}
   .game-item:last-child{border-bottom:none;}
   .game-item:active{background:rgba(255,255,255,.05);}
   .game-item.selected{background:rgba(233,69,96,.1);}
   .game-item.resume{background:rgba(233,69,96,.05);border-left:3px solid var(--accent);}
-  .resume-badge{font-size:10px;font-weight:700;color:var(--accent);background:rgba(233,69,96,.15);border-radius:4px;padding:2px 6px;margin-left:6px;white-space:nowrap;}
   .game-num{font-size:11px;color:var(--muted);min-width:26px;text-align:right;flex-shrink:0;}
   .game-item-info{flex:1;min-width:0;}
   .game-players{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .game-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .game-result-badge{font-size:11px;font-weight:700;color:var(--accent);background:rgba(233,69,96,.12);border-radius:5px;padding:2px 7px;flex-shrink:0;}
   .no-results{text-align:center;color:var(--muted);font-size:13px;padding:24px;}
-  .game-list-outer{position:relative;display:flex;gap:0;border:1px solid var(--border);border-radius:12px;background:var(--panel);}
-  .game-list-scroll{flex:1;overflow-y:auto;max-height:60vh;border-radius:12px 0 0 12px;}
-  .game-vslider-track{width:20px;flex-shrink:0;background:rgba(255,255,255,0.05);border-left:1px solid var(--border);border-radius:0 12px 12px 0;position:relative;cursor:pointer;touch-action:none;user-select:none;}
-  .game-vslider-thumb{position:absolute;left:3px;right:3px;min-height:32px;background:var(--accent);border-radius:5px;opacity:0.85;cursor:grab;}
-
+  .game-jump-row{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:10px;}
+  .game-jump-label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .game-jump-row input[type=range]{flex:1;accent-color:var(--accent);min-width:0;}
+  .game-jump-val{font-size:12px;font-weight:600;color:var(--text);min-width:36px;text-align:right;}
   #viewer{display:none;}
   .game-info{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
   .game-info .players{display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -196,12 +194,12 @@
       <span class="search-icon">🔍</span>
       <input type="text" id="search-input" placeholder="Search player, event, opening…" oninput="renderGameList()">
     </div>
-    <div class="game-list-outer">
-      <div class="game-list-scroll" id="game-list-scroll-wrap"><div class="game-list" id="game-list"></div></div>
-      <div class="game-vslider-track" id="game-vslider-track">
-        <div class="game-vslider-thumb" id="game-vslider-thumb"></div>
-      </div>
+    <div class="game-jump-row" id="game-jump-row">
+      <span class="game-jump-label">Game</span>
+      <input type="range" id="game-jump-slider" min="1" value="1" step="1" oninput="onGameSlider()">
+      <span class="game-jump-val" id="game-jump-val">1</span>
     </div>
+    <div class="game-list-scroll"><div class="game-list" id="game-list"></div></div>
   </div>
 
   <div id="viewer">
@@ -1032,26 +1030,42 @@ function renderGameList(){
     const el=document.createElement('div');
     const isResume=state._resumeIdx===i&&i!==currentDbIdx;
     el.className='game-item'+(i===currentDbIdx?' selected':isResume?' resume':'');
-    const resumeBadge=isResume?'<span class="resume-badge">↩ last opened</span>':''
     const w=(h['White']||'').replace(/\r/g,'').trim(),s=(h['Site']||'').replace(/\r/g,'').trim();
     const isChapter=w&&s&&w===s;
     if(isChapter){
       const chapter=h['Site']||h['White']||'Chapter '+(i+1),rawB=(h['Black']||'').trim(),section=(rawB&&rawB!==h['Site']&&rawB!==h['White'])?rawB:'';
-      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">${chapter}${resumeBadge||''}</div>${section?`<div class="game-detail">${section}</div>`:''}</div>${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
+      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">${chapter}</div>${section?`<div class="game-detail">${section}</div>`:''}</div>${result&&result!=='*'?`<span class="game-result-badge">${result}</span>`:''}`;
     }else{
       const white=h['White']||'?',black=h['Black']||'?',we=h['WhiteElo']?` (${h['WhiteElo']})`:'',be=h['BlackElo']?` (${h['BlackElo']})`:'',date=h['Date']?h['Date'].replace(/\.\?\?/g,'').replace(/\./g,'-'):'',eco=h['ECO']||'',opening=h['Opening']||'',event=h['Event']||'';
       const detail=[event,eco&&opening?`${eco} ${opening}`:opening||eco,date].filter(Boolean).join(' · ');
-      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">♔ ${white}${we} vs ${black}${be} ♚${resumeBadge||''}</div>${detail?`<div class="game-detail">${detail}</div>`:''}</div>${result?`<span class="game-result-badge">${result}</span>`:''}`;
+      el.innerHTML=`<span class="game-num">${i+1}</span><div class="game-item-info"><div class="game-players">♔ ${white}${we} vs ${black}${be} ♚</div>${detail?`<div class="game-detail">${detail}</div>`:''}</div>${result?`<span class="game-result-badge">${result}</span>`:''}`;
     }
     el.addEventListener('click',()=>openGameByDbIndex(i));
     el.addEventListener('touchend',e=>{e.preventDefault();openGameByDbIndex(i);});
     list.appendChild(el);
   }
   if(filteredIndices.length>200){const more=document.createElement('div');more.className='no-results';more.textContent=`Showing 200 of ${filteredIndices.length} — use search to filter`;list.appendChild(more);}
-  setTimeout(()=>{const s=document.getElementById('game-list-scroll-wrap');if(s)s.scrollTop=0;initVSlider();},50);
+  // Update jump slider range
+  const slider=document.getElementById('game-jump-slider');
+  const jumpRow=document.getElementById('game-jump-row');
+  if(filteredIndices.length>1){
+    slider.max=filteredIndices.length;
+    slider.value=currentDbIdx>=0?(filteredIndices.indexOf(currentDbIdx)+1)||1:1;
+    document.getElementById('game-jump-val').textContent=slider.value+' / '+filteredIndices.length;
+    jumpRow.style.display='flex';
+  } else {
+    jumpRow.style.display='none';
+  }
 }
 
-// onGameSlider replaced by vertical slider
+function onGameSlider(){
+  const slider=document.getElementById('game-jump-slider');
+  const idx=parseInt(slider.value)-1;
+  document.getElementById('game-jump-val').textContent=slider.value+' / '+filteredIndices.length;
+  if(filteredIndices[idx]!==undefined){
+    openGameByDbIndex(filteredIndices[idx]);
+  }
+}
 
 function saveLastGame(fn,idx){try{localStorage.setItem('pgn_last_'+fn,idx);}catch(e){}}
 function loadLastGame(fn){try{return parseInt(localStorage.getItem('pgn_last_'+fn));}catch(e){return NaN;}}
@@ -1104,9 +1118,9 @@ function loadPGNText(text,filename){
     document.getElementById('db-title').textContent=filename||'Database';
     const lastIdx=filename?loadLastGame(filename):NaN;
     const resumeIdx=!isNaN(lastIdx)&&lastIdx>=0&&lastIdx<parsed.length?lastIdx:-1;
-    document.getElementById('db-count').textContent=parsed.length+' games'+(resumeIdx>=0?' · last opened: #'+(resumeIdx+1):'');
-    state._resumeIdx=resumeIdx;
+    document.getElementById('db-count').textContent=parsed.length+' games'+(resumeIdx>=0?' · resuming game '+(resumeIdx+1):'');
     document.getElementById('search-input').value='';renderGameList();
+    if(resumeIdx>=0)setTimeout(()=>{openGameByDbIndex(resumeIdx);state._resumeIdx=resumeIdx;},300);
   }
 }
 
@@ -1147,71 +1161,6 @@ dz.addEventListener('drop',e=>{
   const file=e.dataTransfer.files[0];
   if(file){const r=new FileReader();r.onload=ev=>loadPGNText(ev.target.result,file.name);r.readAsText(file);}
 });
-
-// ── Vertical game list slider ─────────────────────────────────────────────────
-function initVSlider(){
-  const track=document.getElementById('game-vslider-track');
-  const thumb=document.getElementById('game-vslider-thumb');
-  const scroll=document.getElementById('game-list-scroll-wrap');
-  if(!track||!thumb||!scroll)return;
-
-  function updateThumb(){
-    const scrollable=scroll.scrollHeight-scroll.clientHeight;
-    if(scrollable<=0){thumb.style.display='none';return;}
-    thumb.style.display='block';
-    const trackH=track.clientHeight;
-    const ratio=scroll.clientHeight/scroll.scrollHeight;
-    const thumbH=Math.max(24,trackH*ratio);
-    const thumbTop=(scroll.scrollTop/scrollable)*(trackH-thumbH);
-    thumb.style.height=thumbH+'px';
-    thumb.style.top=thumbTop+'px';
-  }
-
-  scroll.addEventListener('scroll',updateThumb,{passive:true});
-
-  // Drag logic — all listeners scoped to track only, no global document listeners
-  let dragging=false,startY=0,startScrollTop=0;
-
-  function onDragStart(e){
-    dragging=true;
-    startY=e.touches?e.touches[0].clientY:e.clientY;
-    startScrollTop=scroll.scrollTop;
-    e.preventDefault();
-  }
-  function onDragMove(e){
-    if(!dragging)return;
-    const y=e.touches?e.touches[0].clientY:e.clientY;
-    const dy=y-startY;
-    const trackH=track.clientHeight;
-    const thumbH=thumb.clientHeight;
-    const scrollable=scroll.scrollHeight-scroll.clientHeight;
-    const ratio=dy/(trackH-thumbH);
-    scroll.scrollTop=Math.max(0,Math.min(startScrollTop+ratio*scrollable,scrollable));
-    e.preventDefault();
-  }
-  function onDragEnd(){dragging=false;}
-
-  // All on track — no global document listeners
-  track.addEventListener('touchstart',onDragStart,{passive:false});
-  track.addEventListener('touchmove',onDragMove,{passive:false});
-  track.addEventListener('touchend',onDragEnd,{passive:true});
-  track.addEventListener('mousedown',onDragStart);
-  track.addEventListener('mousemove',onDragMove);
-  track.addEventListener('mouseup',onDragEnd);
-  track.addEventListener('mouseleave',onDragEnd);
-
-  // Tap on track to jump
-  track.addEventListener('click',e=>{
-    if(e.target===thumb)return;
-    const rect=track.getBoundingClientRect();
-    const y=e.clientY-rect.top;
-    const ratio=y/track.clientHeight;
-    scroll.scrollTop=ratio*(scroll.scrollHeight-scroll.clientHeight);
-  });
-
-  updateThumb();
-  setTimeout(updateThumb,400);
-}
 
 // ── Autoplay ──────────────────────────────────────────────────────────────────
 let autoplayTimer=null, autoplaySpeed=1000;
