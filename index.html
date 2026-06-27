@@ -46,7 +46,7 @@
   .db-header{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .db-title{font-size:14px;font-weight:600;}
   .db-count{font-size:12px;color:var(--muted);}
-  .search-bar{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:8px;}
+  /* search-bar now inside search-jump-row */
   .search-bar input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;}
   .search-bar input::placeholder{color:var(--muted);}
   .search-icon{color:var(--muted);font-size:14px;}
@@ -62,6 +62,13 @@
   .game-detail{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .game-result-badge{font-size:11px;font-weight:700;color:var(--accent);background:rgba(233,69,96,.12);border-radius:5px;padding:2px 7px;flex-shrink:0;}
   .no-results{text-align:center;color:var(--muted);font-size:13px;padding:24px;}
+  .search-jump-row{display:flex;gap:8px;align-items:stretch;}
+  .search-bar{flex:1;min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:8px;}
+  .jump-bar{display:flex;align-items:center;gap:6px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px 10px;min-width:0;width:140px;flex-shrink:0;}
+  .jump-icon{font-size:13px;font-weight:700;color:var(--muted);flex-shrink:0;}
+  .jump-bar input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;outline:none;min-width:0;width:52px;}
+  .jump-bar input::placeholder{color:var(--muted);}
+  .jump-btn{background:var(--accent);border:none;border-radius:6px;color:white;font-size:12px;font-weight:700;padding:4px 8px;cursor:pointer;flex-shrink:0;}
   .game-jump-row{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:9px 13px;display:flex;align-items:center;gap:10px;}
   .game-jump-label{font-size:11px;color:var(--muted);white-space:nowrap;}
   .game-jump-row input[type=range]{flex:1;accent-color:var(--accent);min-width:0;}
@@ -190,9 +197,18 @@
       </div>
       <button onclick="resetViewer()">← New file</button>
     </div>
-    <div class="search-bar">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="search-input" placeholder="Search player, event, opening…" oninput="renderGameList()">
+    <div class="search-jump-row">
+      <div class="search-bar">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Search player, event, opening…" oninput="renderGameList()">
+      </div>
+      <div class="jump-bar">
+        <span class="jump-icon">#</span>
+        <input type="number" id="jump-input" placeholder="Game #" min="1"
+          onkeydown="if(event.key==='Enter')jumpToGame()"
+          inputmode="numeric">
+        <button onclick="jumpToGame()" class="jump-btn">Go</button>
+      </div>
     </div>
     <div class="game-jump-row" id="game-jump-row">
       <span class="game-jump-label">Game</span>
@@ -1210,6 +1226,30 @@ function onSpeedChange(){
   if(autoplayTimer){ clearTimeout(autoplayTimer); scheduleNext(); }
 }
 
+
+function jumpToGame(){
+  const input=document.getElementById('jump-input');
+  const num=parseInt(input.value);
+  if(isNaN(num)||num<1){input.value='';return;}
+  // num is 1-based game number in the full db
+  const idx=num-1;
+  if(idx>=0&&idx<db.length){
+    openGameByDbIndex(idx);
+    input.value='';
+    // Scroll to the item in the list if visible
+    setTimeout(()=>{
+      const items=document.querySelectorAll('.game-item');
+      items.forEach(el=>{
+        if(el.querySelector('.game-num')&&el.querySelector('.game-num').textContent==num){
+          el.scrollIntoView({behavior:'smooth',block:'nearest'});
+        }
+      });
+    },100);
+  } else {
+    input.value='';
+    alert(`Game #${num} not found. Enter a number between 1 and ${db.length}.`);
+  }
+}
 
 document.addEventListener('keydown',e=>{
   if(document.getElementById('viewer').style.display==='none')return;
