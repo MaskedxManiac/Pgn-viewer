@@ -1252,6 +1252,16 @@ function jumpToGame(){
 }
 
 document.addEventListener('keydown',e=>{
+  const listPanel=document.getElementById('game-list-panel');
+  const listVisible=listPanel&&listPanel.style.display!=='none';
+  const jumpInput=document.getElementById('jump-input');
+  const searchInput=document.getElementById('search-input');
+  const typing=document.activeElement===jumpInput||document.activeElement===searchInput;
+  if(listVisible&&!typing){
+    const scroll=listPanel.querySelector('.game-list-scroll')||listPanel.querySelector('.game-list-scroll-wrap')||listPanel.querySelector('.game-list-outer');
+    if(e.key==='ArrowDown'){if(scroll)scroll.scrollTop+=80;e.preventDefault();return;}
+    if(e.key==='ArrowUp'){if(scroll)scroll.scrollTop-=80;e.preventDefault();return;}
+  }
   if(document.getElementById('viewer').style.display==='none')return;
   if(e.key==='ArrowRight')nextMove();if(e.key==='ArrowLeft')prevMove();
   if(e.key==='ArrowUp')goToStart();if(e.key==='ArrowDown')goToEnd();
