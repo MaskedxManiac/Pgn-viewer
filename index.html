@@ -130,7 +130,8 @@
   .move-token.has-note::after{content:'';position:absolute;top:3px;right:2px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.8;}
   .move-token.variation{color:#a8c8ff;}
   .move-token.variation.active{background:rgba(100,160,255,.2);color:#c8deff;}
-  .variation-block{display:flex;flex-wrap:wrap;gap:2px;margin-left:14px;padding:2px 8px;border-left:2px solid rgba(100,160,255,.3);margin-top:2px;margin-bottom:2px;}
+  .variation-block{display:flex;flex-wrap:wrap;gap:2px;margin-left:10px;padding:2px 8px;border-left:2px solid rgba(100,160,255,.3);margin-top:2px;margin-bottom:2px;}
+  .inline-annotation{font-size:11px;color:#7a9ab8;font-style:italic;padding:0 4px;line-height:1.6;}
   .nav-row{display:flex;align-items:center;gap:8px;}
   .nav-row button{padding:8px 14px;font-size:13px;}
   .flip-btn{font-size:18px;padding:8px 12px;}
@@ -311,7 +312,7 @@ let db=[],currentDbIdx=-1,filteredIndices=[];
 let state={
   board:null,history:[],currentMove:-1,
   moves:[],annotations:[],headers:{},
-  flipped:false,lastFrom:null,lastTo:null,
+  flipped:false,lastFrom:null,lastTo:null,moveTree:[],
   currentFilename:null,fenMoveNum:1,fenIsWhite:true,fen:null,
   // Analysis tree: variations[moveIdx] = [{san, board, from, to}]
   variations:{},
@@ -828,40 +829,145 @@ function clearVariations(){
 function buildMoveList(){
   const ml=document.getElementById('move-list');
   ml.innerHTML='';
-  const main=document.createElement('div');main.className='main-line';
-  state.moves.forEach((m,i)=>{
-    if(i%2===0){const n=document.createElement('span');n.className='move-num';n.textContent=(i/2+1)+'.';main.appendChild(n);}
-    const el=document.createElement('span');el.className='move-token';el.textContent=m;el.dataset.idx=i;
-    if(state.annotations[i])el.classList.add('has-note');
-    el.addEventListener('click',()=>goTo(i));
-    el.addEventListener('touchend',e=>{e.preventDefault();goTo(i);});
-    main.appendChild(el);
-    // Variations after this move
-    if(state.variations[i]){
-      state.variations[i].forEach((vari,vi)=>{
-        const vblock=document.createElement('div');vblock.className='variation-block';
-        // Move number for first variation move
-        const vStart=i+1;
-        const vmNum=Math.floor(vStart/2)+1;
-        const isWhiteMove=vStart%2===1;
-        const numEl=document.createElement('span');numEl.className='move-num';
-        numEl.textContent=vmNum+'.'+(isWhiteMove?'':'...');
-        vblock.appendChild(numEl);
-        vari.moves.forEach((vm,vmi)=>{
-          const vel=document.createElement('span');
-          vel.className='move-token variation';vel.textContent=vm;
-          const isActive=state.inVariation&&state.varParent===i&&state.varIdx===vi&&state.varMoveIdx===vmi;
-          if(isActive)vel.classList.add('active');
-          vel.addEventListener('click',()=>enterVariation(i,vi,vmi));
-          vel.addEventListener('touchend',e=>{e.preventDefault();enterVariation(i,vi,vmi);});
-          vblock.appendChild(vel);
-        });
-        main.appendChild(vblock);
+  const tree=state.moveTree&&state.moveTree.length?state.moveTree:null;
+
+  if(tree){
+    // Render full variation tree
+    const startHalf=state.fenIsWhite===false?1:0;
+    renderTreeNodes(tree,ml,startHalf,0,-1,-1);
+  } else {
+    // Fallback: flat move list
+    const main=document.createElement('div');main.className='main-line';
+    state.moves.forEach((m,i)=>{
+      if(i%2===0){const n=document.createElement('span');n.className='move-num';n.textContent=(i/2+1)+'.';main.appendChild(n);}
+      const el=document.createElement('span');el.className='move-token';el.textContent=m;el.dataset.idx=i;
+      if(state.annotations[i])el.classList.add('has-note');
+      el.addEventListener('click',()=>goTo(i));
+      el.addEventListener('touchend',e=>{e.preventDefault();goTo(i);});
+      main.appendChild(el);
+    });
+    ml.appendChild(main);
+  }
+  highlightMoveList();
+}
+
+function renderTreeNodes(nodes,container,halfMove,depth,parentFlatIdx,varKey){
+  nodes.forEach((node,ni)=>{
+    const isWhite=(halfMove+ni)%2===0;
+    const flatIdx=depth===0?halfMove+ni:-1;
+
+    // Move number label
+    if(isWhite||ni===0){
+      const numEl=document.createElement('span');
+      numEl.className='move-num';
+      numEl.textContent=Math.floor((halfMove+ni)/2+1)+'.'+(isWhite?'':'...');
+      container.appendChild(numEl);
+    }
+
+    // Move token
+    const el=document.createElement('span');
+    el.className='move-token'+(depth>0?' variation':'');
+    el.textContent=node.san+(node.nag?' '+node.nag:'');
+    if(node.comment)el.classList.add('has-note');
+    if(depth===0){
+      el.dataset.idx=flatIdx;
+      el.addEventListener('click',()=>goTo(flatIdx));
+      el.addEventListener('touchend',e=>{e.preventDefault();goTo(flatIdx);});
+    } else {
+      // For variation nodes, build the variation on the fly up to this point
+      const capturedDepth=depth,capturedNi=ni,capturedHalf=halfMove,capturedVarKey=varKey,capturedParent=parentFlatIdx;
+      el.addEventListener('click',()=>goToVariationNode(capturedParent,capturedVarKey,capturedNi));
+      el.addEventListener('touchend',e=>{e.preventDefault();goToVariationNode(capturedParent,capturedVarKey,capturedNi);});
+    }
+    container.appendChild(el);
+
+    // Inline comment
+    if(node.comment){
+      const ann=document.createElement('span');
+      ann.className='inline-annotation';
+      ann.textContent='{'+node.comment+'}';
+      container.appendChild(ann);
+    }
+
+    // Sub-variations
+    if(node.vars&&node.vars.length){
+      node.vars.forEach((varNodes,vi)=>{
+        const vblock=document.createElement('div');
+        vblock.className='variation-block';
+        const vKey=`${depth===0?flatIdx:varKey}_${vi}`;
+        const vParent=depth===0?flatIdx:parentFlatIdx;
+        renderTreeNodes(varNodes,vblock,halfMove+ni,depth+1,vParent,vKey);
+        container.appendChild(vblock);
       });
     }
   });
-  ml.appendChild(main);
-  highlightMoveList();
+}
+
+// Build and enter a variation from the PGN tree
+function goToVariationNode(parentFlatIdx,varKey,targetNi){
+  if(parentFlatIdx<0||!state.history[parentFlatIdx+1])return;
+  const snap=state.history[parentFlatIdx+1];
+
+  // Find the variation nodes in the tree
+  const tree=state.moveTree;
+  let varNodes=null;
+  function findVar(nodes,half,depth){
+    for(let i=0;i<nodes.length;i++){
+      const flatIdx=half+i;
+      if(nodes[i].vars){
+        nodes[i].vars.forEach((v,vi)=>{
+          const vKey=`${depth===0?flatIdx:varKey}_${vi}`;
+          if(!varNodes&&(vKey===varKey||depth===0&&flatIdx===parentFlatIdx)){
+            // Check if this is the right variation
+            if(String(flatIdx)===String(parentFlatIdx)||vKey===varKey)varNodes=v;
+          }
+          if(!varNodes)findVar(v,half+i,depth+1);
+        });
+      }
+    }
+  }
+  // Simpler: find by parentFlatIdx
+  function findVarByParent(nodes,half){
+    for(let i=0;i<nodes.length;i++){
+      if(half+i===parentFlatIdx&&nodes[i].vars&&nodes[i].vars.length){
+        // Pick first matching var that contains targetNi moves
+        for(const v of nodes[i].vars){
+          if(v.length>targetNi){varNodes=v;return;}
+        }
+        if(nodes[i].vars[0])varNodes=nodes[i].vars[0];
+        return;
+      }
+      if(nodes[i].vars)nodes[i].vars.forEach(v=>findVarByParent(v,half+i));
+    }
+  }
+  findVarByParent(tree,0);
+  if(!varNodes)return;
+
+  // Build variation history
+  let board=cloneBoard(snap.board);
+  let castling=snap.castling||{w:{K:true,Q:true},b:{K:true,Q:true}};
+  let ep=snap.ep||null;
+  const startIsWhite=(parentFlatIdx+1+(state.fenIsWhite===false?1:0))%2===0;
+  let isWhite=startIsWhite;
+  const varHistory=[{board:cloneBoard(board),from:null,to:null,castling:JSON.parse(JSON.stringify(castling)),ep}];
+  const sanList=[];
+  for(let k=0;k<=targetNi&&k<varNodes.length;k++){
+    const res=applyMove(board,varNodes[k].san,isWhite,castling,ep);
+    if(!res)break;
+    board=res.board;castling=res.castling;ep=res.enPassant;
+    varHistory.push({board:cloneBoard(board),from:res.from,to:res.to,castling:JSON.parse(JSON.stringify(castling)),ep});
+    sanList.push(varNodes[k].san);
+    isWhite=!isWhite;
+  }
+
+  if(!state.variations[parentFlatIdx])state.variations[parentFlatIdx]=[];
+  // Reuse existing variation if same moves
+  let vi=state.variations[parentFlatIdx].findIndex(v=>v.moves.join(',')===sanList.join(','));
+  if(vi<0){
+    state.variations[parentFlatIdx].push({moves:sanList,history:varHistory});
+    vi=state.variations[parentFlatIdx].length-1;
+  }
+  enterVariation(parentFlatIdx,vi,sanList.length-1);
 }
 
 function enterVariation(parentIdx,vi,vmi){
@@ -1097,7 +1203,7 @@ function openGameByDbIndex(dbIdx){
   const fenData=g.fen?parseFEN(g.fen):{board:initBoard(),isWhite:true};
   const initB=fenData.board;
   state.headers=g.headers;state.moves=g.tokens;state.annotations=g.annotations;
-  state.gameComment=g.gameComment||null;state.fen=g.fen||null;
+  state.gameComment=g.gameComment||null;state.fen=g.fen||null;state.moveTree=g.moveTree||[];
   state.fenMoveNum=g.fen?parseFEN(g.fen).moveNum:1;state.fenIsWhite=fenData.isWhite;
   state.history=buildHistory(g.tokens,initB,fenData.isWhite);
   state.currentMove=-1;state.board=cloneBoard(initB);
