@@ -374,25 +374,61 @@ function parsePGN(pgn){
   const re=/\[(\w+)\s+"([^"]*)"\]/g;let m;
   while((m=re.exec(pgn))!==null)headers[m[1]]=m[2];
   let body=pgn.replace(/\[.*?\]/gs,'').replace(/[\r\n]+/g,' ').trim();
-  let prev;do{prev=body;body=body.replace(/\([^()]*\)/g,'');}while(body!==prev);
-  body=body.replace(/\$\d+/g,' ').replace(/\s*(1-0|0-1|1\/2-1\/2|\*)\s*$/,'');
-  const tokens=[],annotations=[];
-  let gameComment=null;
-  for(const chunk of body.split(/(\{[^}]*\})/)){
-    const c=chunk.trim();if(!c)continue;
-    if(c.startsWith('{')){
-      const t=c.slice(1,-1).trim();
-      if(!tokens.length)gameComment=t;else annotations[tokens.length-1]=t;
-    }else{
-      for(const w of c.split(/\s+/).filter(w=>w&&!/^\d+\.+$/.test(w))){
-        tokens.push(w);annotations.push(null);
-      }
+
+  // Tokenise preserving ( ) { } NAGs
+  const toks=[];let i=0;
+  while(i<body.length){
+    if(body[i]===' '){i++;continue;}
+    if(body[i]==='{'){
+      let j=body.indexOf('}',i+1);if(j<0)j=body.length-1;
+      toks.push({t:'comment',text:body.slice(i+1,j).trim()});i=j+1;continue;
     }
+    if(body[i]==='('){toks.push({t:'open'});i++;continue;}
+    if(body[i]===')'){toks.push({t:'close'});i++;continue;}
+    if(body[i]==='$'){
+      let j=i+1;while(j<body.length&&body[j]>='0'&&body[j]<='9')j++;
+      toks.push({t:'nag',v:body.slice(i,j)});i=j;continue;
+    }
+    let j=i;
+    while(j<body.length&&body[j]!==' '&&body[j]!=='{'&&body[j]!=='('&&body[j]!==')')j++;
+    const w=body.slice(i,j).trim();i=j;
+    if(!w)continue;
+    if(/^(1-0|0-1|1\/2-1\/2|\*)$/.test(w))continue;
+    if(/^\d+\.+$/.test(w))continue;
+    toks.push({t:'move',san:w});
   }
-  return{headers,tokens,annotations,gameComment:gameComment||null,fen:headers['FEN']||null};
+
+  // Parse into tree
+  function parseVar(pos){
+    const nodes=[];let gameComment=null;
+    while(pos<toks.length){
+      const tk=toks[pos];
+      if(tk.t==='close'){pos++;break;}
+      if(tk.t==='open'){
+        pos++;const r=parseVar(pos);pos=r.end;
+        if(nodes.length)nodes[nodes.length-1].vars.push(r.nodes);
+        continue;
+      }
+      if(tk.t==='comment'){
+        if(!nodes.length)gameComment=tk.text;
+        else nodes[nodes.length-1].comment=tk.text;
+        pos++;continue;
+      }
+      if(tk.t==='nag'){if(nodes.length)nodes[nodes.length-1].nag=tk.v;pos++;continue;}
+      if(tk.t==='move'){nodes.push({san:tk.san,comment:null,nag:null,vars:[]});pos++;continue;}
+      pos++;
+    }
+    return{nodes,end:pos,gameComment};
+  }
+
+  const{nodes:moveTree,gameComment}=parseVar(0);
+  const tokens=[],annotations=[];
+  function flatten(nodes){for(const n of nodes){tokens.push(n.san);annotations.push(n.comment||null);}}
+  flatten(moveTree);
+
+  return{headers,tokens,annotations,gameComment:gameComment||null,fen:headers['FEN']||null,moveTree};
 }
 
-// ── Chess logic ───────────────────────────────────────────────────────────────
 function applyMove(board,token,isWhite,castling,enPassant){
   const b=cloneBoard(board),color=isWhite?'w':'b';
   let newEP=null,newC=JSON.parse(JSON.stringify(castling));
@@ -1203,7 +1239,7 @@ function openGameByDbIndex(dbIdx){
   const fenData=g.fen?parseFEN(g.fen):{board:initBoard(),isWhite:true};
   const initB=fenData.board;
   state.headers=g.headers;state.moves=g.tokens;state.annotations=g.annotations;
-  state.gameComment=g.gameComment||null;state.fen=g.fen||null;state.moveTree=g.moveTree||[];
+  state.gameComment=g.gameComment||null;state.fen=g.fen||null;state.moveTree=g.moveTree||[];state.moveTree=g.moveTree||[];
   state.fenMoveNum=g.fen?parseFEN(g.fen).moveNum:1;state.fenIsWhite=fenData.isWhite;
   state.history=buildHistory(g.tokens,initB,fenData.isWhite);
   state.currentMove=-1;state.board=cloneBoard(initB);
